@@ -1,0 +1,39 @@
+ZDI ACQUISITION BASELINE
+
+This is the canonical standing buyer-fit baseline for target scoping, Candidate
+Challenge, portfolio admission, and Final Review. Technical validity alone is
+not acquisition fit.
+
+Required:
+
+- The vulnerability exists in the latest available shipped stable version.
+- The affected product has widespread deployment.
+
+Preference:
+
+- Remote code execution.
+- Software affecting enterprises.
+- Server-side software.
+- Desktop or mobile operating systems.
+- Browsers.
+- SCADA or IIoT.
+- Sandbox escapes.
+- VM escapes.
+- Security products.
+
+Normally excluded:
+
+- Cross-site scripting.
+- DLL planting.
+- Live websites.
+- ActiveX.
+- Most consumer-only products; a widely used security product or some IoT
+  products may survive only when the dossier proves the narrow exception.
+- Beta or pre-release software.
+- Denial-of-service-only findings.
+- Anything already publicly posted or otherwise known.
+
+These are acquisition gates in addition to currentness, proof, negative
+controls, duplicate review, remediation independence, and conservative impact.
+Tier-B or operator-exception authority cannot waive latest-version,
+deployment, public-status, or excluded-class failures.

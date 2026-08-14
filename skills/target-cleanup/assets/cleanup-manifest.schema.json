@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "JENNY Target Cleanup Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "target_slug",
+    "target_root",
+    "created_at",
+    "pre_cleanup_free_bytes",
+    "preserved_roots",
+    "resources"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "target_slug": {"type": "string", "minLength": 1},
+    "target_root": {"type": "string", "minLength": 1},
+    "created_at": {"type": "string", "minLength": 1},
+    "pre_cleanup_free_bytes": {"type": "integer", "minimum": 0},
+    "post_cleanup_free_bytes": {"type": ["integer", "null"], "minimum": 0},
+    "preserved_roots": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "resources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "resource_id",
+          "kind",
+          "classification",
+          "planned_action",
+          "size_bytes",
+          "ownership_evidence",
+          "restore_source"
+        ],
+        "properties": {
+          "resource_id": {"type": "string", "minLength": 1},
+          "kind": {"type": "string", "minLength": 1},
+          "resolved_path": {"type": ["string", "null"]},
+          "external_resource": {"type": ["string", "null"]},
+          "classification": {
+            "enum": ["PRESERVE", "REHYDRATABLE", "AMBIGUOUS_OR_SHARED"]
+          },
+          "planned_action": {"enum": ["PRESERVE", "DELETE", "LEAVE"]},
+          "size_bytes": {"type": ["integer", "null"], "minimum": 0},
+          "ownership_evidence": {"type": "string"},
+          "active_use_evidence": {"type": ["string", "null"]},
+          "restore_source": {"type": "string"},
+          "actual_result": {"type": ["string", "null"]},
+          "freed_bytes": {"type": ["integer", "null"], "minimum": 0}
+        },
+        "anyOf": [
+          {"required": ["resolved_path"]},
+          {"required": ["external_resource"]}
+        ]
+      }
+    },
+    "verification": {
+      "type": ["object", "null"],
+      "properties": {
+        "protected_roots_intact": {"type": "boolean"},
+        "errors": {"type": "array", "items": {"type": "string"}}
+      }
+    }
+  }
+}

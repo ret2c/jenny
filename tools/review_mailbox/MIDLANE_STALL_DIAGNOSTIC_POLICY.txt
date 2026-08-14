@@ -1,0 +1,11 @@
+MIDLANE STALL DIAGNOSTIC POLICY
+
+Load this file only after Hunter remains WORKING and stale after 1800 seconds (30 minutes) on a race-checked status read.
+
+Perform bounded file activity inspection over at most three relevant roots and ten files. The effective activity time is the newest check-in, latest relevant file write, or newest relevant mailbox event. File access/read timestamps are not reliable activity evidence. Fresh activity yields `WORKING (activity verified)` once. Do not emit `POSSIBLY STALLED DIAGNOSTIC`.
+
+Otherwise emit `POSSIBLY STALLED DIAGNOSTIC` once per same stale check-in tuple. Review the current Midlane conversation and already-open Hunter chat. Classify `LIKELY ACTIVE`, `WATCH`, `LIKELY STALLED`, or `UNKNOWN`. If the Hunter chat is inaccessible, say so. Persist only a changed diagnosis with `checkin --worker midlane --state IDLE --task "Hunter stale diagnostic: <CLASSIFICATION>" --detail "File activity: <...>; Hunter chat: <...>; Uncertainty: <...>; Operator action: <...>"`.
+
+One request may seek explicit operator authorization. Do not take the proposed action unless the operator explicitly approves it. Never write Hunter's check-in, restart Hunter, or mutate packages.
+
+Use the mailbox-provided `age` field verbatim. If age must be computed, below one hour use `m` and `s`, including `0m 0s`; at one hour or above use a 365-day year, 30-day month, and at most two nonzero units from `y mo w d h m`. If only one remains, append its immediate next smaller unit as zero (`1h 0m`). Drop lower units, never round, and never print raw `age_seconds`. Capture real display time with `Get-Date -Format "h:mm:ss tt"`.

@@ -1,0 +1,33 @@
+PROMPT AND GATE CHANGE EVALUATION
+
+Final Reviewer rework is the private regression corpus for workflow changes.
+Do not deploy a candidate-admission, package, Midlane, or Final Reviewer prompt
+change solely because it reads better.
+
+1. Export a sanitized corpus:
+
+   python -B tools\review_mailbox\workflow_eval.py export-reworks --output notes\workflow_evaluation\final_rework_corpus.jsonl
+
+2. Run the proposed prompt or gate against the cases in a disposable session.
+   Write private JSONL with one object per request:
+
+   {"request_id": 1, "predicted_categories": ["EVIDENCE_PROVENANCE"]}
+
+3. Score it:
+
+   python -B tools\review_mailbox\workflow_eval.py score-replay --corpus notes\workflow_evaluation\final_rework_corpus.jsonl --responses <PRIVATE_RESPONSES_JSONL>
+
+4. Compare against the currently deployed prompt on the same cases. Deploy only
+   when the change does not reduce recall, does not create a new safety or
+   authority violation, and improves the intended failure class. Keep exact
+   scores and the proposed prompt private.
+
+Categories are coarse regression labels, not vulnerability verdicts. Passing
+this evaluation never authorizes package mutation, a Midlane PASS, or a Final
+Reviewer READY verdict.
+
+Use `workflow_eval.py metrics` for aggregate candidate, rework, ready, offer,
+accepted-dollar, and same-product-concentration measurements. Evaluate the
+first twenty Candidate Challenge decisions before loosening portfolio policy.
+Research-hours-per-offer remains unavailable until durable tranche timing
+exists; do not invent it from chat duration.

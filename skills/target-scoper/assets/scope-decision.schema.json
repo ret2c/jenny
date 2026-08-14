@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "JENNY Target Scope Decision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "scope_revision",
+    "generated_at",
+    "target",
+    "verdict",
+    "score",
+    "economics",
+    "acquisition",
+    "paths",
+    "decisive_reasons"
+  ],
+  "properties": {
+    "schema_version": {"const": 2},
+    "scope_revision": {"type": "integer", "minimum": 1},
+    "generated_at": {"type": "string"},
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slug", "vendor", "product", "current_version", "official_release_url"],
+      "properties": {
+        "slug": {"type": "string", "minLength": 1},
+        "vendor": {"type": "string", "minLength": 1},
+        "product": {"type": "string", "minLength": 1},
+        "current_version": {"type": "string", "minLength": 1},
+        "official_release_url": {"type": "string", "minLength": 1}
+      }
+    },
+    "verdict": {
+      "enum": ["CANDIDATE", "SCOPED", "DISCOURAGED", "HARD_EXCLUDED"]
+    },
+    "score": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total", "buyer_fit", "impact", "enterprise", "proof_distance", "novelty", "workspace_leverage"],
+      "properties": {
+        "total": {"type": "integer", "minimum": 0, "maximum": 100},
+        "buyer_fit": {"type": "integer", "minimum": 0, "maximum": 25},
+        "impact": {"type": "integer", "minimum": 0, "maximum": 20},
+        "enterprise": {"type": "integer", "minimum": 0, "maximum": 15},
+        "proof_distance": {"type": "integer", "minimum": 0, "maximum": 15},
+        "novelty": {"type": "integer", "minimum": 0, "maximum": 15},
+        "workspace_leverage": {"type": "integer", "minimum": 0, "maximum": 10}
+      }
+    },
+    "economics": {
+      "type": "object",
+      "required": ["buyer_route", "likely_band", "ceiling"],
+      "properties": {
+        "buyer_route": {"type": "string"},
+        "likely_band": {"type": "string"},
+        "ceiling": {"type": "string"}
+      }
+    },
+    "acquisition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "exact_artifact", "official_url", "verified_at", "evidence", "operator_confirmation"],
+      "properties": {
+        "status": {"enum": ["SELF_SERVE_VERIFIED", "OPERATOR_ENTITLEMENT_CONFIRMED", "UNRESOLVED", "BLOCKED"]},
+        "exact_artifact": {"type": "string", "minLength": 1},
+        "official_url": {"type": "string", "minLength": 1},
+        "verified_at": {"type": "string", "minLength": 1},
+        "evidence": {"type": "string", "minLength": 1},
+        "operator_confirmation": {"type": ["string", "null"]}
+      }
+    },
+    "paths": {
+      "type": "object",
+      "required": ["scope_dir", "goal", "mirror"],
+      "properties": {
+        "scope_dir": {"type": "string"},
+        "goal": {"type": ["string", "null"]},
+        "mirror": {"type": ["string", "null"]}
+      }
+    },
+    "decisive_reasons": {"type": "array", "items": {"type": "string"}},
+    "reopen_condition": {"type": ["string", "null"]},
+    "source_count": {"type": "integer", "minimum": 0}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"verdict": {"const": "SCOPED"}}, "required": ["verdict"]},
+      "then": {
+        "properties": {
+          "acquisition": {
+            "properties": {
+              "status": {"enum": ["SELF_SERVE_VERIFIED", "OPERATOR_ENTITLEMENT_CONFIRMED"]}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "acquisition": {
+            "properties": {"status": {"const": "OPERATOR_ENTITLEMENT_CONFIRMED"}},
+            "required": ["status"]
+          }
+        },
+        "required": ["acquisition"]
+      },
+      "then": {
+        "properties": {
+          "acquisition": {
+            "properties": {"operator_confirmation": {"type": "string", "minLength": 1}}
+          }
+        }
+      }
+    }
+  ]
+}

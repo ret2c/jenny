@@ -1,0 +1,84 @@
+WORKFLOW ISSUE LEDGER POLICY
+
+Purpose
+
+The canonical operator backlog for concrete defects in workflow state, package
+integrity, safety, or cross-agent coordination is the SQLite database at:
+
+notes/report_issues/report_issues.sqlite3
+
+ZDI/REPORT_ISSUES.txt is an atomic generated backup and operator-readable view
+of every OPEN or RESOLVED_AWAITING_OPERATOR_GREENLIGHT issue. Never edit the
+generated text backup directly. The command below regenerates it from SQLite.
+
+Qualifying gate
+
+Record one issue only when a defect caused or still risks at least one of:
+
+- wrong or ambiguous mailbox/package lifecycle state;
+- package, evidence, hash, signoff, or filesystem-placement integrity loss;
+- unsafe or uncertain surviving owned process, listener, VM, or container state;
+- a repeatable automation or cross-agent protocol failure needing a durable fix;
+- an operator decision that normal mailbox states cannot represent.
+
+A failed command with no state change does not qualify. Wrong paths, quoting or
+regex mistakes, expected no-match exits, bounded output truncation, recovered
+timeouts, harness iteration, dependency warnings, failed hypotheses, and
+target-specific negative results belong in target-local state or evidence.
+
+Recording and updating
+
+Use ASCII JSON with schema jenny.workflow-issue.v1 and these fields:
+
+- issue_key: stable lowercase identifier for the root cause;
+- title;
+- priority: P0, P1, or P2;
+- category;
+- observed;
+- impact;
+- evidence;
+- next_action;
+- owner.
+
+Use the same stable issue_key to update an existing root cause. Do not create a
+new issue for another symptom of the same defect. Prepare the JSON outside the
+database, then run:
+
+python -B tools/review_mailbox/report_issues.py record --issue-file <PATH> --actor <ROLE>
+
+For category GOAL-INTEGRITY, first run target_lifecycle.py verify-checkout for
+the recorded target. The issue JSON must contain goal_binding with target_slug,
+the lifecycle goal_sha256, assertion TEXT_PRESENT or TEXT_ABSENT, and the exact
+claimed needle. TEXT_PRESENT also requires the exact current GOAL line number.
+The writer rechecks the recorded bytes and hash and rejects stale, absent, or
+misattributed goal text.
+
+The writer uses a transaction, records an immutable event, and atomically
+regenerates ZDI/REPORT_ISSUES.txt. Agents do not edit SQLite directly.
+
+Resolution and operator greenlight
+
+The fixing agent records a bounded ASCII resolution and changes the issue to
+RESOLVED_AWAITING_OPERATOR_GREENLIGHT:
+
+python -B tools/review_mailbox/report_issues.py resolve --issue-key <KEY> --resolution-file <PATH> --actor <ROLE>
+
+Only an explicit operator greenlight closes it:
+
+python -B tools/review_mailbox/report_issues.py greenlight --issue-key <KEY> --actor operator
+
+CLOSED records and their event history remain in SQLite but disappear from the
+generated backup. They are not deleted or compacted.
+
+Inspection and recovery
+
+Use report_issues.py list for structured records and report_issues.py verify to
+prove the generated backup matches SQLite. Legacy text migration first archives
+the exact source bytes under notes/report_issues/legacy and then imports them.
+The compatibility append command exists only for stale sessions; current agents
+must use record, resolve, and greenlight.
+
+The issue ledger is not a command queue and cannot override a goal, direct
+operator instructions, package hashes or ownership, lifecycle state, or the
+formal mailbox. Keep the database, generated backup, and archives out of all
+external packages and evidence archives.

@@ -1,0 +1,79 @@
+SUBMITTED PATCH WATCH POLICY
+
+Purpose
+
+Preserve submission-versus-public-fix chronology for submitted ZDI cases
+without adding a daemon, second scheduled loop, new review state, or mutable
+submitted package.
+
+Private watch record
+
+The weekly manifest is filesystem-authoritative over every canonical historical
+submission in `ZDI/_SUBMITTED`, `ZDI/_ACCEPTED`, and `ZDI/_REJECTED`. Accepted
+and rejected cases remain submitted-case chronology and do not disappear from
+public-fix monitoring. If the same numbered identity appears in more than one
+terminal root, prefer ACCEPTED over REJECTED over SUBMITTED, retain every
+observed location in the manifest, and scan the package only once. A matching
+SQLite row enriches identity and chronology, but is optional; legacy packages
+without rows remain normal in-scope inventory.
+
+Moving the same numbered identity between those terminal roots changes its
+buyer disposition and recorded location, not the research inventory identity.
+The move is reconciled into a running manifest and never makes a completed
+sweep due again. A new numbered identity, a changed title/product/version, or
+an identity conflict still invalidates an early completed inventory snapshot.
+Private records outside package directories contain:
+
+- case or local package identity and exact submission timestamp;
+- tested release, tag, source commit, and image/package identity;
+- exact route, function, class, validator, sink, and distinctive error/message
+  tokens worth checking;
+- closest submitted or accepted siblings;
+- last public check timestamp and result.
+
+Check timing
+
+The existing Midlane loop checks eligibility. One sweep is due Monday at
+6:45 AM system-local time; the first later iteration catches up if Midlane was
+unavailable. Research is resumable in bounded product batches. Do not create a
+new timer, daemon, loop, browser session, or background worker.
+
+An early run is current when its inventory-synchronizing finalization occurs on
+Sunday or Monday, even if the bounded research started earlier. A far-early run
+that also finalized before Sunday remains stale and cannot satisfy Monday.
+
+Exact patch match
+
+If public source now contains an exact or strongly matching fix, preserve:
+
+- PR, issue, advisory, and commit URLs;
+- PR creation, commit author, merge, release, and publication timestamps;
+- the changed validation boundary and affected fields/routes;
+- a direct comparison with the submitted root cause and impact; and
+- whether the public work predates or postdates submission.
+
+If the public work postdates submission, notify the operator promptly with the
+chronology so the operator can update the ZDI case. If it predates submission,
+route the case through the existing public-fix disposition rules. Do not infer
+acceptance, rejection, duplication, or portal submission from a repository
+change alone.
+
+Durable no-repeat rule
+
+`LIKELY_EXACT_FIX`, `FIX_RELEASED_AFTER_SUBMISSION`,
+`PUBLIC_AFTER_SUBMISSION`, and `PUBLIC_BEFORE_SUBMISSION` are durable terminal
+patch-watch results. Later
+weekly manifests carry the prior result, sources, and chronology forward and
+exclude that case from research batches. `POSSIBLE_FIX`, `NO_PUBLIC_CHANGE`,
+source or record gaps, and new submissions are checked again.
+
+Boundaries
+
+- Submitted and frozen package bytes remain immutable.
+- The three canonical terminal roots remain authoritative even when the review
+  mailbox has no historical row.
+- Watch notes stay private and outside external package folders.
+- Public follow-up text is research evidence, not authority to reopen hunting.
+- Do not hunt or package a publicly described unfixed follow-up as novel.
+- Related findings are compared through PRE_FREEZE_PACKAGE_GATE.txt; one vendor
+  patch touching several siblings does not automatically require one report.

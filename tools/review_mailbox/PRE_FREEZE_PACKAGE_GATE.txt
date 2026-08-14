@@ -1,0 +1,229 @@
+PRE-FREEZE PACKAGE GATE
+
+Purpose
+
+Hunter runs this gate before every registration or re-registration. Midlane
+checks the same frozen bytes before PASS. Passing package safety alone is not
+enough: the external report and raw evidence must independently support every
+material claim that Final Review will evaluate.
+
+Mechanical gate
+
+Run all commands against the exact package that will be frozen. Every command
+must exit zero.
+
+python tools\review_mailbox\package_safety.py validate --package <PACKAGE_PATH>
+powershell -ExecutionPolicy Bypass -File tools\sidecar_package_shape.ps1 -PackagePath <PACKAGE_PATH> -Modern
+powershell -ExecutionPolicy Bypass -File tools\sidecar_portal_text_gate.ps1 -DescriptionPath <DESCRIPTION_PATH> -Mode candidate
+powershell -ExecutionPolicy Bypass -File tools\sidecar_package_gate.ps1 -PackagePath <PACKAGE_PATH>
+powershell -ExecutionPolicy Bypass -File tools\sidecar_zip_internal_note_gate.ps1 -PackagePath <PACKAGE_PATH>
+powershell -ExecutionPolicy Bypass -File tools\sidecar_package_secret_scan.ps1 -PackagePath <PACKAGE_PATH>
+
+The modern package contains one description, one evidence ZIP,
+PACKAGE_HASHES.txt, and one loose folder_of_everything_necessary directory. The
+evidence ZIP contains exactly one enclosing root named
+folder_of_everything_necessary/, uses forward-slash member names, and is byte-
+identical to the loose tree. PACKAGE_HASHES.txt contains exactly the description
+and evidence ZIP in standard SHA-256 format. Flat ZIPs, multiple roots,
+backslash member names, missing files, and extra files fail closed.
+
+The description uses the exact numbered 1-6 portal format and contains the
+exact LLM assistance disclosure once. Fix the package and rebuild hashes/ZIPs
+after any failure; never waive a failed gate in prose.
+
+Candidate-admission gate
+
+Read tools/review_mailbox/CANDIDATE_CHALLENGE_POLICY.txt. For a new package
+number, Hunter first writes and submits one private
+jenny.candidate-dossier.v1. Midlane independently requires complete technical
+proof and hard eligibility. ADMIT_PROOF additionally requires economic review
+to PASS; an exact operator-authorized OPERATOR_EXCEPTION may override only a
+PARTIAL economic review. BANK, CONSOLIDATE,
+and WRITE_OFF never receive a number. The exported private
+jenny.candidate-challenge-result.v1 is bound to one package number through
+begin-package-build and must be supplied again to package preflight.
+
+The admitted result must carry a registered current-version receipt captured
+from two distinct official HTTPS resolvers no more than sixteen hours earlier. Its
+target, product, version, source manifest, receipt hash, acquired artifact size,
+and artifact hash must still agree. A stale, hand-written, missing, drifted, or
+unregistered receipt fails Candidate Challenge validation and therefore fails
+package preflight. Refresh the receipt and re-export the admitted result; never
+waive currentness in prose.
+
+Existing numbered lineages created before this gate are grandfathered; do not
+invent a retroactive challenge for ordinary rework.
+
+Before deep validation, preserve one private record with all of these fields:
+
+First query the live mailbox, not a target-local lead ledger:
+
+python -B tools\review_mailbox\review_mailbox.py candidate-inventory --product <EXACT_PRODUCT>
+
+Write one private JSON acknowledgement with schema
+jenny.candidate-inventory-ack.v1, the exact product and returned inventory
+digest, reviewed_item_ids containing every returned ID, and closest_sibling with
+item_id, disposition (DISTINCT, CONSOLIDATE, or DUPLICATE), and a concrete
+root/sink/impact reason. Terminal and submitted items remain relevant history.
+If the result changes before registration, preflight fails closed.
+
+- Exact environment binding assertion: exact product, component, latest shipped
+  version/build, source tag or commit, acquisition artifact hash/signature,
+  installed identity, service/process identity, and supported deployment must
+  agree in one independently reviewable currentness record.
+- Supported boundary: supported deployment, default exposure, bind, privilege,
+  and configuration prerequisite.
+- Attacker model: exact OS identity, product role, network position, transport,
+  permissions, and prerequisite knowledge.
+- End-to-end path: attacker input through every intermediate validation,
+  authorization, serialization, background handoff, and use namespace to sink.
+- Raw evidence: positive proof, same-attacker negative, before/after state,
+  restoration, environment identity, and currentness.
+- Prior art and adverse documentation: closest CVE, GHSA, issue, PR, vendor
+  documentation, pending ZDI case, and local sibling, including contrary facts.
+- Evidence-bounded CVSS assertion: record the complete vector and numeric score,
+  label it as demonstrated impact or theoretical ceiling, and map every scored
+  metric to preserved evidence. Any unsupported metric must be lowered before
+  freezing.
+- Root independence: one independently fixable root per case and whether one
+  narrow fix necessarily closes a sibling.
+- Packaged reproduction: exact command and expected positive/negative result
+  from a fresh extraction without workspace or target-local dependencies.
+
+Do not replace missing fields with narrative confidence.
+
+Portfolio-admission gate
+
+Read tools/review_mailbox/PORTFOLIO_ADMISSION_POLICY.txt. Before the Candidate
+Challenge, write one private JSON record with schema
+jenny.portfolio-admission.v1. Registration accepts only disposition PROMOTE.
+The record contains:
+
+- product: exact product string used for candidate-inventory and registration;
+- candidate_title: concise private candidate title;
+- inventory_digest and reviewed_item_ids: the complete current same-product
+  inventory binding;
+- root_family_id: stable private root/remediation-family identifier;
+- likely_payout_usd: integer low and high conservative likely values;
+- theoretical_ceiling_usd: separate integer ceiling at least as high as likely;
+- portfolio_class: A_TIER, CHAIN_COMPONENT, or TIER_B_EXCEPTION;
+- same_product_rank: positive integer rank against the reviewed portfolio;
+- chain_role: standalone, exact chain contribution, or none;
+- operator_exception: boolean, true for every TIER_B_EXCEPTION;
+- operator_instruction: the exact current operator instruction for a
+  TIER_B_EXCEPTION, otherwise an empty string;
+- disposition: PROMOTE; and
+- why_now: concrete reason this candidate should consume package, review, and
+  portal attention now.
+
+BANK, CONSOLIDATE, and WRITE_OFF remain target-private and never receive a
+package number unless the operator explicitly overrides that disposition.
+An acknowledged INCLUDE_B_TIER profile is standing operator authority for a
+matching-target Tier-B candidate. Under another profile, an explicit current
+request may authorize one named candidate. Either path records
+TIER_B_EXCEPTION, operator_exception true, and PROMOTE; neither waives any
+technical, currentness, duplicate, or package gate. Refresh the record if
+candidate-inventory changes. Economics, rank, and portfolio reasoning never
+enter external package bytes.
+
+Claim-to-evidence gate
+
+Map every material sentence in the external impact and root-cause claims to an
+independently reviewable raw artifact inside the package. At minimum prove:
+
+- attacker role and permissions, including the relevant allowed baseline;
+- the corresponding denied or lower-privilege negative control;
+- when crossing an object/group boundary, that ordinary inventory excludes or
+  denies the victim object before the attack;
+- exact current product build and supported production path;
+- before, after, and restored state for every mutation;
+- one artifact containing the decisive result, not a conclusion assembled only
+  from separate Hunter summaries.
+
+For public-prior-art screening, the absence of internal route or class names in
+a public advisory does not clear a collision when the product, attacker
+position, impact, and remediation boundary substantially match. Require
+version-lineage or equivalent technical evidence before claiming a distinct
+surviving root cause.
+
+For every public source repository, search GitHub issues and GitHub pull
+requests separately using the exact function, exact sink, and exact behavior,
+plus relevant aliases. Preserve the query, direct result URLs, UTC time, and a
+concise disposition in the private prior-art record. Advisory, GHSA, commit,
+or release-note searches do not substitute for either tracker sweep. If the
+issue or pull-request search is unavailable or incomplete, the candidate
+cannot PASS.
+
+Sibling independence gate
+
+When a candidate shares a writer, validator, helper, authorization namespace,
+or remediation family with a local finding, submitted case, accepted case, or
+public issue, create a private sibling matrix before freezing. Record for every
+candidate:
+
+- attacker position and required privileges;
+- attacker-controlled write or input path;
+- missing security invariant;
+- runtime sink and enforcement point;
+- exact proven impact;
+- whether the proof is independently reproducible; and
+- whether one narrow fix necessarily closes both candidates.
+
+Separate packages are allowed when the runtime sinks, crossed security
+boundaries, proven impacts, and decisive proofs are independently meaningful.
+Cross-reference the sibling honestly and explain the distinction. Consolidate
+route aliases, field aliases, or alternate call sites when they exercise the
+same missing check, reach the same sink, and prove materially the same impact.
+Do not force unrelated impacts into one root-cause report merely because a
+vendor later bundles several fields or sinks into one patch. A later bundled
+vendor PR is evidence of a shared family, not retroactive proof that only one
+report was valid.
+
+Keep the sibling matrix in target-local private notes or
+scratch/review_mailbox. Never place local case numbers, payout comparisons, or
+workflow discussion in the external package.
+
+Hash-bound package preflight
+
+After the exact package bytes pass the gates above, store each packaged replay
+command in a private JSON file containing one argv array. Run:
+
+python -B tools\review_mailbox\package_preflight.py --package <PACKAGE_PATH> --goal <ACTIVE_GOAL_PATH> --product <EXACT_PRODUCT> --inventory-ack <PRIVATE_ACK_JSON> --portfolio-admission <PRIVATE_PORTFOLIO_JSON> --candidate-challenge <PRIVATE_CHALLENGE_RESULT_JSON> --result <PRIVATE_RESULT_JSON> --offline-command <PRIVATE_COMMAND_JSON>
+
+Omit --inventory-ack only when candidate-inventory returned no items. Use
+--candidate-challenge for every new package lineage; omit it only for an
+existing numbered lineage that the tool identifies as legacy-unbound. Use
+--live-command only for a necessary current-product replay and add
+--allow-live-replay only when that replay is already authorized by the active
+goal. The result stays under private notes or scratch/review_mailbox, never in
+the external package. Require schema jenny.package-preflight.v1, PASS, the exact
+current package, goal, inventory, and PROMOTE hashes, the canonical fresh
+extraction root, no external path dependency, successful packaged commands, and
+unchanged package bytes. Then register the same bytes with:
+
+python -B tools\review_mailbox\review_mailbox.py register --package <PACKAGE_PATH> --product <PRODUCT> --version <VERSION> --preflight-result <PRIVATE_RESULT_JSON>
+
+Registration fails closed without that exact result. Midlane independently
+repeats the mechanical, evidence, reproduction, and prior-art gates against the
+frozen revision; Hunter's preflight is not a Midlane verdict.
+
+Impact-specific minimums
+
+- SSRF/proxy: preserve the raw token or route input, canonical IP, selected
+  backend, callback source, response status, and response digest together;
+  explain any apparently disabled private-network flag.
+- Retrieval/write: prove the persisted filename, length, and SHA-256 at the
+  product-controlled destination, plus the no-request or denied control.
+- Authorization/association: preserve raw role, permission, inventory, victim,
+  before/after, restoration, and lower-role denial evidence.
+- Policy/notification: prove a downstream security effect such as suppression,
+  redirection, delivery change, or integrity loss. If only association tampering
+  is proven, narrow the external claim to that exact effect.
+
+Decision
+
+If a required artifact does not exist, collect it before freezing. If the
+effect cannot be proved, narrow the external claim or return NEEDS WORK/HOLD as
+appropriate. Never register a package whose strongest language exceeds its raw
+evidence. Keep the private claim-to-evidence map in target-local notes or
+scratch/review_mailbox, outside the external package.

@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JENNY Dashboard</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%98%80%EF%B8%8F%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/dashboard.css">
+  <script src="/dashboard.js" defer></script>
+</head>
+<body>
+  <main>
+    <header class="topbar">
+      <div>
+        <h1 id="project-identity">JENNY</h1>
+        <p id="active-target">Target: Connecting</p>
+      </div>
+      <div class="refresh-controls">
+        <div id="refresh-status" class="refresh-status" role="status">Connecting</div>
+        <button id="refresh-now" class="refresh-now" type="button">Refresh</button>
+      </div>
+    </header>
+
+    <section id="weekly-patch-ack-card" class="panel weekly-patch-ack-card" hidden aria-live="polite">
+      <div id="weekly-patch-ack-content"></div>
+    </section>
+
+    <section id="report-issues-ack-card" class="panel report-issues-ack-card" hidden aria-live="polite">
+      <div id="report-issues-ack-content"></div>
+    </section>
+
+    <section id="report-issue-greenlight-confirmation" class="panel report-issue-greenlight-confirmation" hidden aria-live="polite" role="status"></section>
+
+    <section id="diminishing-returns-card" class="panel diminishing-returns-card" hidden aria-live="polite">
+      <h2>Diminishing returns</h2>
+      <div id="diminishing-returns-content" class="card-content"></div>
+    </section>
+
+    <section id="package-outcome-notifications" class="package-outcome-notifications" hidden aria-live="polite"></section>
+
+    <section id="alerts" class="alerts" aria-live="polite" hidden></section>
+
+    <section id="operator-action-feedback" class="panel operator-action-feedback" role="status" aria-live="polite" hidden></section>
+
+    <section id="first-run-card" class="panel first-run-card" hidden>
+      <h2>Start here</h2>
+      <p>No work is active yet. Keep the first run small:</p>
+      <ol>
+        <li>Open the dashboard and the role sessions named in the setup guide.</li>
+        <li>Scope one target; scoping does not activate or hunt it.</li>
+        <li>Activate only the exact approved goal when you are ready to hunt.</li>
+      </ol>
+    </section>
+
+    <section class="status-grid" aria-label="Current status">
+      <article id="hunter-card" class="panel status-card">
+        <h2>Hunter</h2>
+        <div class="card-content">Waiting for status</div>
+      </article>
+      <article id="host-card" class="panel status-card">
+        <h2>Host</h2>
+        <div class="card-content">Waiting for status</div>
+      </article>
+      <article id="midlane-card" class="panel status-card" hidden>
+        <h2>Midlane</h2>
+        <div class="card-content">Waiting for status</div>
+      </article>
+    </section>
+
+    <section id="hunt-profile-card" class="panel hunt-profile-card" aria-live="polite">
+      <div class="hunt-profile-heading">
+        <h2>Hunt profile</h2>
+        <span id="hunt-profile-state" class="hunt-profile-state">Loading</span>
+      </div>
+      <div id="hunt-profile-controls" class="hunt-profile-controls" role="group" aria-label="Hunt profile"></div>
+      <div id="hunt-profile-error" class="hunt-profile-error" role="status"></div>
+    </section>
+
+    <section id="final-reviewer-panel" class="panel reviewer-panel" hidden aria-live="polite">
+      <h2>Final Reviewer</h2>
+      <div class="card-content">Waiting for status</div>
+    </section>
+
+    <details id="candidate-review-panel" class="panel candidate-review-panel" hidden>
+      <summary id="candidate-review-heading">Candidate review <span id="candidate-review-count" class="candidate-review-count"></span></summary>
+      <div class="table-wrap">
+        <table class="candidate-review-table">
+          <thead>
+            <tr>
+              <th>Candidate</th>
+              <th>Product</th>
+              <th>Title</th>
+              <th>Version</th>
+              <th>State</th>
+              <th>Next</th>
+              <th>Age</th>
+            </tr>
+          </thead>
+          <tbody id="candidate-review-rows"></tbody>
+        </table>
+      </div>
+    </details>
+
+    <section id="active-panel" class="panel" aria-labelledby="active-heading">
+      <h2 id="active-heading">Active packages</h2>
+      <div id="active-table-wrap" class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Package</th>
+              <th>Product</th>
+              <th>Title</th>
+              <th>Rev</th>
+              <th>State</th>
+              <th>Working</th>
+              <th>Age</th>
+            </tr>
+          </thead>
+          <tbody id="active-packages"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <details id="coordination-inbox-card" class="panel coordination-inbox-card">
+      <summary>
+        Coordination inbox
+        <span id="coordination-request-flag" class="coordination-request-flag" hidden>NEW REQ</span>
+        <span id="coordination-message-flag" class="coordination-request-flag" hidden>NEW MSG</span>
+      </summary>
+      <div class="coordination-inbox-body" aria-live="polite">
+        <div id="coordination-inbox-status" class="coordination-inbox-status" role="status" hidden></div>
+        <div id="coordination-chat-history" class="coordination-chat-history">
+          <div class="coordination-empty muted">No Midlane chat messages</div>
+        </div>
+        <form id="coordination-chat-form" class="coordination-chat-form">
+          <textarea id="coordination-chat-input" maxlength="2000" rows="2" placeholder="Message Midlane" aria-label="Message Midlane"></textarea>
+          <div class="coordination-chat-controls">
+            <button id="coordination-chat-send" class="confirmation-button confirmation-confirm" type="submit">Send</button>
+            <span id="coordination-chat-status" class="coordination-action-status" role="status"></span>
+          </div>
+        </form>
+        <div id="coordination-inbox-content" class="coordination-inbox-content">
+          <div class="coordination-empty muted">No open coordination messages</div>
+        </div>
+      </div>
+    </details>
+
+    <details class="panel terminal-panel">
+      <summary>Terminal packages</summary>
+      <h3 id="terminal-summary" class="terminal-summary"></h3>
+      <div id="terminal-packages" class="terminal-list"></div>
+    </details>
+
+    <details id="recent-activity-card" class="panel recent-activity-card">
+      <summary id="events-heading">Recent activity</summary>
+      <div id="recent-events" class="event-list"></div>
+    </details>
+
+    <details id="report-issues-card" class="panel report-issues-card" hidden>
+      <summary><span id="report-issues-summary">Reported workflow issues</span></summary>
+      <div id="report-issues-content" class="report-issues-content"></div>
+    </details>
+
+    <details id="weekly-patch-watch" class="panel weekly-report">
+      <summary><span id="weekly-patch-summary">Weekly Patch Watch | not run yet</span></summary>
+      <div id="weekly-patch-countdown" class="weekly-countdown">Next run unavailable</div>
+      <div id="weekly-patch-content" class="weekly-content"></div>
+    </details>
+  </main>
+
+  <dialog id="confirmation-dialog" class="confirmation-dialog" role="dialog" aria-modal="true" aria-labelledby="confirmation-title">
+    <div class="confirmation-shell">
+      <div class="confirmation-eyebrow">Confirm action</div>
+      <h2 id="confirmation-title">Are you sure?</h2>
+      <p id="confirmation-summary" class="confirmation-summary"></p>
+      <section class="confirmation-section" aria-labelledby="confirmation-changes-heading">
+        <h3 id="confirmation-changes-heading">This will change</h3>
+        <ul id="confirmation-changes" class="confirmation-list"></ul>
+      </section>
+      <section class="confirmation-section" aria-labelledby="confirmation-unchanged-heading">
+        <h3 id="confirmation-unchanged-heading">This will not change</h3>
+        <ul id="confirmation-unchanged" class="confirmation-list"></ul>
+      </section>
+      <p id="confirmation-warning" class="confirmation-warning"></p>
+      <div class="confirmation-actions">
+        <button id="confirmation-cancel" class="confirmation-button" type="button">Cancel</button>
+        <button id="confirmation-confirm" class="confirmation-button confirmation-confirm" type="button">Confirm</button>
+      </div>
+    </div>
+  </dialog>
+</body>
+</html>

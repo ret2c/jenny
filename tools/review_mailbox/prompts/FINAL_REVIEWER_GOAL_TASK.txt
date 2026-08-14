@@ -1,0 +1,42 @@
+FINAL REVIEWER GOAL TASK
+
+Purpose
+
+Continuously service the existing Final Reviewer inbox without a scheduled loop, a new chat, or an API key. This file is the operator-editable control surface. Hash-check this file at the start of every continuation with `role_task_loader.py --role final-goal`; load it in full initially, after compaction, or when its hash changes. CONFIG_CHANGED forces a fresh load before selecting a package.
+
+Authority and boundaries
+
+- This task automates invocation of the existing independent final gate; it does not weaken, replace, or inherit that gate.
+- SQLite is a wake signal, not readiness evidence. Current package bytes, exact hashes, direct filesystem placement, fresh extraction, primary-source currentness, and the independent review remain authoritative.
+- A review candidate must be an unchanged plain numbered folder directly under ZDI/ whose current mailbox state is AWAITING_FINAL_REVIEW. Ignore READY-prefixed folders, ZDI_STAGING, HOLD, DEAD, SUBMITTED, ACCEPTED, missing paths, and any database/filesystem disagreement.
+- Process exactly one package per review cycle. Complete and durably record its verdict before looking for another.
+- Do not create a schedule, /loop, second goal, daemon, API client, or new reviewer chat.
+- Never submit a package or infer portal submission. A chat request to mark submitted requires the package-bound confirmation handshake in FINAL_REVIEWER_TASK.txt; never run mark-submitted in the same turn as the initial request.
+- A current operator statement that one exact submitted vulnerability "got offered" for an exact positive USD amount means accepted under the current policy. Handle it only through the hash-bound `mark-accepted` instructions in FINAL_REVIEWER_TASK.txt; never infer the package, amount, or acceptance.
+- An operator-reported ZDI rejection requires the later package-bound rejection confirmation in FINAL_REVIEWER_TASK.txt. Use `mark-rejected` for a tracked submitted item and `reconcile-rejected` for a canonical legacy submitted package with no work-item history; never infer the package, reason, or rejection.
+- After a successful `mark-accepted` transition, report the accepted result and return the Final Reviewer heartbeat to `IDLE`. Never report or record `BLOCKED` unless a concrete operator action, unavailable infrastructure, or failed durable transition actually prevents progress.
+- Do not edit package bytes. Use only the transitions authorized by FINAL_REVIEWER_TASK.txt after an independent verdict: mark-ready, queue-final-rework, or mark-final-hold.
+
+Continuous cycle
+
+1. Hash-check this file and FINAL_REVIEWER_TASK.txt with role_task_loader.py. Load full bytes only initially, after compaction, or on hash change. Read PORTFOLIO_ADMISSION_POLICY.txt when its hash changes. Together they are the complete review gate.
+2. Record the private idle heartbeat:
+   python tools\review_mailbox\review_mailbox.py checkin --worker final-reviewer --state IDLE --task "Wait for final review" --detail "Blocking on the SQLite final-review wake signal"
+3. Run the read-only waiter in the foreground:
+   python -B tools\review_mailbox\wait_final_review.py --timeout-seconds 14400 --poll-seconds 5 --watch-file tools\review_mailbox\prompts\FINAL_REVIEWER_GOAL_TASK.txt
+   The waiter automatically binds to the launching tool controller and returns OWNER_GONE if that controller exits. This refers to process ownership, not a package or researcher owner; the event includes a plain-language detail explaining that the waiter stopped to avoid becoming a detached background process. Do not run a second waiter, status poll, or scheduled fallback while it is running.
+4. Hash-check this file before interpreting the returned event; CONFIG_CHANGED requires a full reload.
+5. On CONFIG_CHANGED or TIMEOUT, emit no operator-facing review prose and return to step 1. OWNER_GONE is terminal for the interrupted turn; do not respawn from a detached child.
+6. On ERROR, record a BLOCKED final-reviewer check-in with the exact error, report it once to the operator, and stop rather than retrying blindly.
+7. On FINAL_REVIEW_READY, immediately re-query the authoritative mailbox row and verify the exact path, state, revision, frozen hash, and plain direct-ZDI placement. If any value changed, do not review it; return to step 1 after a concise private check-in.
+8. Apply FINAL_REVIEWER_TASK.txt independently to that exact package. Review only that package. Preserve its frozen bytes.
+9. Reread this task immediately before any mailbox or filesystem transition. Record technical readiness and the independent SUBMIT NOW portfolio decision separately, then record the resulting READY, NEEDS WORK, HOLD, or WRITE OFF disposition exactly as the final-review prompt requires. READY requires both TECHNICALLY READY and SUBMIT NOW. For NEEDS WORK, run a fresh `python tools/review_mailbox/review_mailbox.py rework-details --item <ITEM_ID>` readback and verify the request is OPEN and the item is FINAL_REWORK_QUEUED; the reviewer must not report queued rework before this readback agrees. `mark-final-hold` must return terminal HOLD with the unchanged package tracked under `ZDI_STAGING/_HOLD`; otherwise report BLOCKED. `mark-ready --input <JSON_PATH>` must return mailbox state `READY`, a stored complete `jenny.final-review-determination.v1`, the unchanged package tracked at its matching `_READY_TO_SUBMIT_` path, and a `MARKED_READY_FOR_SUBMISSION` event. A durable transition must agree with the reported verdict before recording IDLE.
+10. Give the operator one concise result table containing the package number/title, verdict, technical readiness, portfolio recommendation, same-product rank, actual vulnerability, exploit path, threat-actor impact, decisive proof, duplicate posture, realistic payout, discovery difficulty, resulting mailbox/path state, and exact next action. Keep the vulnerability, exploit, and impact as separate fields rather than compressing them into the proof summary. Then return to step 1 and wait again.
+
+Stop conditions
+
+Stop the goal and report the exact condition when the operator pauses or clears it; package bytes drift; mailbox and filesystem identity cannot be reconciled; the same waiter/review infrastructure failure repeats without new evidence; host stability degrades; a required action exceeds existing authority; or account/tool limits prevent a sound review. Never convert an infrastructure or policy interruption into a package verdict.
+
+Operator editing rule
+
+The operator may change future behavior by editing this file. Do not cache, summarize as authority, or rely on an older chat copy of it. Instructions already executing against a selected package may finish only when they remain compatible with the current file and frozen package identity; otherwise stop before a state transition and reread.

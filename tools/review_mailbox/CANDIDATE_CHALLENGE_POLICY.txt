@@ -1,0 +1,249 @@
+CANDIDATE CHALLENGE POLICY
+
+Purpose
+
+Apply the canonical standing buyer-fit rule in ACQUISITION_BASELINE.txt.
+
+Challenge the candidate before package construction consumes a number, review
+time, and portal attention. This is private workflow state, never external
+package content. It supplements the existing portfolio policy; it does not
+weaken currentness, duplicate, evidence, package, or Final Review gates.
+
+Named admission checks
+
+current_identity
+Prove the exact current shipped product, supported deployment, service
+identity, and exposed entry point.
+
+attacker_reachability
+Prove that the stated attacker controls the input and reaches the current
+product path under the supported configuration.
+
+boundary_controls
+Use same-attacker valid or denied controls to establish the claimed trust,
+tenant, privilege, process, host, or memory boundary.
+
+deterministic_impact
+Prove the complete end-to-end effect without an unstated vulnerability,
+unsupported configuration, obsolete build, privileged prerequisite, or
+theoretical follow-on.
+
+hard_eligibility
+Root cause, conservative demonstrated impact, currentness, public/local
+duplicate posture, remediation independence, and complete proof artifacts must
+survive review. The issue must exist in the latest shipped stable version of a
+credibly widely deployed product. XSS, DLL planting, live-site-only issues,
+ActiveX, ordinary consumer-only products, beta/pre-release software, DoS-only
+findings, and public or otherwise known issues fail hard eligibility.
+
+economic_review
+Buyer fit, conservative likely payout, same-product rank, chain role, and
+portfolio timing must justify consuming package and portal attention now. Give
+weight to remote code execution, enterprise/server software, operating
+systems, browsers, SCADA/IIoT, sandbox or VM escapes, and security products.
+
+New jenny.candidate-dossier.v1 records use these six exact keys in the `proof`
+object. The validator continues to read the retired level-key layout only so
+existing durable dossiers and results remain usable; agents do not create new
+records in that layout.
+
+Hunter
+
+Before assigning a number, query the current same-product inventory and write
+one private JSON dossier using schema jenny.candidate-dossier.v1. Store it under
+targets/<slug>/notes/ or scratch/review_mailbox, never ZDI or ZDI_STAGING. It
+contains:
+
+- exact candidate/product/version/target/goal and inventory identities;
+- current_version_receipt_path and current_version_receipt_sha256 from a fresh,
+  tool-registered jenny.current-version-receipt.v1 captured no more than sixteen
+  hours earlier;
+- public_prior_art_receipt_path and public_prior_art_receipt_sha256 from a
+  fresh, tool-registered jenny.public-prior-art-receipt.v2;
+- attacker and supported-boundary contracts;
+- all six named admission checks with status, claim, and evidence references;
+- role-object, lifecycle, version-identity, and claim-to-evidence matrices;
+- closest adverse public and local prior art;
+- an explicit disposition for every URL returned by the registered public-
+  prior-art receipt, using DISTINCT, DUPLICATE, INCOMPLETE_FIX, RELATED, or
+  NOT_SECURITY_RELEVANT; an omitted result fails admission. Every returned URL
+  also records root_relation as EXACT_FUNCTION, SAME_ROOT_FAMILY, or DISTINCT,
+  and remediation_status as EXACT_REMEDIATION, INCOMPLETE_REMEDIATION, or
+  NO_REMEDIATION. Exact remediation of the function or root family blocks
+  ADMIT_PROOF and OPERATOR_EXCEPTION even if its general disposition was
+  mistakenly labeled DISTINCT;
+- an exploit_upgrade_challenge record naming every credible stronger
+  same-root path and closing each as PROVED, CLOSED, or NOT_APPLICABLE with a
+  reason and evidence references; CLOSED and NOT_APPLICABLE also require a
+  typed `closure_basis` backed by an existing private evidence file. Accepted
+  bases are allocator geometry blocking control, unreachable control data,
+  a mitigation that prevents the stronger impact, an unreachable product path,
+  an excluded supported boundary, or semantic non-applicability. "Not yet
+  demonstrated," an untested layout, harness friction, elapsed time, or failure
+  to find a stable object is absence of proof and never closure. Any OPEN path
+  fails admission;
+- stable root-family ID; and
+- conservative likely payout, ceiling, same-product rank, chain role, and any
+  exact operator Tier-B exception.
+
+Submit it without creating a package folder:
+
+python -B tools\review_mailbox\candidate_challenge.py submit --input <DOSSIER_JSON>
+
+The receipt is not hand-written. First write a private
+jenny.current-version-source.v1 manifest under targets/<slug>/ with the exact
+target, product, claimed version, acquired artifact path, exact source URLs
+already authorized by the active goal, and two independent hostnames. Each
+resolver is either json_field or regex with a named version group. Then run:
+
+python -B tools\review_mailbox\current_version_gate.py capture --manifest <SOURCE_JSON> --receipt <RECEIPT_JSON>
+
+The tool fetches both official records, requires both to resolve the claimed
+version, binds their exact URLs to the current active goal, hashes their
+responses, the active goal, and the acquired artifact, and registers the
+receipt in private SQLite. Candidate submission, decision, export, package
+binding, and package preflight all revalidate the registered receipt, active
+goal, and exact artifact. Refresh it when it is older than sixteen hours or any
+source, manifest, artifact, product, target, goal, or version changes.
+
+The public-prior-art receipt is also machine-generated and registered. Write a
+private jenny.public-prior-art-source.v2 manifest under targets/<slug>/ with the
+exact target, canonical or known product alias, one exact GOAL-authorized
+GitHub repository, private workspace-relative source checkout, stable root-
+family ID, and one to six exact function, sink, helper, or behavior tokens.
+Its required_refs matrix names stable, maintenance, release_candidate, and
+main arrays. Each requested row binds one exact advertised refs/... name to
+the exact local refs/... name that supports the currentness claim; stable and
+main require at least one row, while an inapplicable maintenance or release-
+candidate role uses an empty array. Then run:
+
+python -B tools\review_mailbox\public_prior_art_gate.py capture --manifest <PRIOR_ART_SOURCE_JSON> --receipt <PRIOR_ART_RECEIPT_JSON>
+
+Before searching, the tool resolves every requested remote ref directly with
+git ls-remote and compares it to the named local ref. A successful fetch with a
+narrow or tag-only refspec cannot pass when a remote-tracking ref is stale.
+The tool then canonicalizes product aliases and searches GitHub issues and
+GitHub pull requests separately for every root token. Candidate submission
+revalidates the receipt's registry row, hash, current GOAL, target, product,
+root family, source-currentness matrix, and sixteen-hour age. A v1 manifest
+must be migrated and recaptured; a hand-written or copied receipt cannot pass.
+
+Midlane
+
+Before claiming a numbered package, run:
+
+python -B tools\review_mailbox\candidate_challenge.py claim-next --reviewer midlane
+
+Claiming or resuming a challenge atomically records Midlane `WORKING` against
+that candidate. A successful decision atomically returns Midlane to `IDLE`.
+The read-only Midlane waiter continues to return a Midlane-owned `CLAIMED` row,
+so an interrupted reviewer receives the same durable claim again rather than
+stranding it.
+
+Independently inspect the referenced current-version, positive, negative,
+impact, prior-art, and inventory evidence. Do not inherit Hunter's conclusions
+and do not edit research or package bytes. Write one private decision JSON with
+schema jenny.candidate-challenge.v1, the exact candidate ID and dossier hash,
+one disposition, a concise summary, issue IDs, and evidence references.
+Before deciding, reconcile every result URL in the registered public-prior-art
+receipt to the dossier's adverse-prior-art dispositions and independently
+challenge its explicit root/remediation assessment and the
+exploit_upgrade_challenge closures. An undispositioned or unassessed URL, exact
+public remediation, or an OPEN stronger same-root path blocks ADMIT_PROOF and
+OPERATOR_EXCEPTION.
+
+Allowed dispositions:
+
+- ADMIT_PROOF - all technical, eligibility, and economic checks PASS, and class is A_TIER or
+  CHAIN_COMPONENT.
+- OPERATOR_EXCEPTION - technical proof and hard eligibility PASS, economic
+  review is PASS or PARTIAL, and the
+  exact current operator instruction explicitly authorizes this named
+  TIER_B_EXCEPTION. It overrides economic review only.
+- BANK - technically real but below the present economic threshold.
+- CONSOLIDATE - valuable only as a sibling or chain component already covered.
+- WRITE_OFF - public, duplicate, fixed, unsupported, stale, or not sellable.
+
+A distinct A_TIER dossier with technical proof, hard eligibility, and economic
+review all PASS has standing
+promotion authority. Midlane must record ADMIT_PROOF; it must not BANK the
+candidate because it is the fourth or later same-product case, because a goal
+contains an old promotion budget, or because the product is concentrated.
+Concentration remains evidence for ranking, collision, and remediation review,
+not an operator-approval gate. Tier-B promotion remains the only path requiring
+standing INCLUDE_B_TIER or a candidate-bound OPERATOR_EXCEPTION.
+
+Record the decision:
+
+python -B tools\review_mailbox\candidate_challenge.py decide --id <ID> --reviewer midlane --input <DECISION_JSON>
+
+Hunter and Midlane cannot self-authorize OPERATOR_EXCEPTION. An acknowledged
+INCLUDE_B_TIER profile is standing operator authority for a matching-target
+TIER_B_EXCEPTION. It permits only the economic-review override described above, and no
+second approval request or candidate-specific record is required. When any
+other profile is active, the operator may separately bind one-off authority to
+the exact candidate, dossier hash, and instruction:
+
+python -B tools\review_mailbox\candidate_challenge.py authorize-exception --id <ID> --instruction "<EXACT CURRENT OPERATOR INSTRUCTION>"
+
+The decision and later package validation fail closed unless either the matching
+standing profile or the candidate-bound record is current. A candidate-bound
+record fails closed when missing, expired, stale, or hash-mismatched.
+
+`claim-next` returns `operator_exception_authority` as the current SQLite
+authority snapshot for the frozen candidate. Midlane must consume that field
+before choosing a disposition. When it is active and the dossier has complete
+technical proof and hard eligibility with only eligible economic pressure, do not record BANK solely because an
+older review context did not contain the authority; use OPERATOR_EXCEPTION.
+
+Only ADMIT_PROOF or OPERATOR_EXCEPTION may be exported:
+
+python -B tools\review_mailbox\candidate_challenge.py export --id <ID> --output <PRIVATE_RESULT_JSON>
+
+Package admission
+
+Hunter may assign the number only after receiving that exported result:
+
+python -B tools\review_mailbox\review_mailbox.py begin-package-build --package <PACKAGE_PATH> --product <PRODUCT> --version <VERSION> --candidate-challenge <PRIVATE_RESULT_JSON> --detail "<BUILD PHASE>"
+
+The result is bound to one package number in SQLite. The exact same result is
+passed to package_preflight.py with --candidate-challenge. A missing, stale,
+non-admitted, product/version-mismatched, or differently bound result fails
+closed.
+
+If an admitted package-bound result expires or becomes stale during a claimed
+substantive Final rework, Hunter must not edit the result, reuse its decision,
+or alter SQLite directly. Hunter writes a fresh same-family dossier whose
+inventory excludes the existing package number and runs:
+
+python -B tools/review_mailbox/current_version_gate.py capture --manifest <SOURCE_JSON> --receipt <RECEIPT_JSON> --final-rework-item <ITEM_ID>
+python -B tools/review_mailbox/candidate_challenge.py submit-final-rework-refresh --item <ITEM_ID> --input <PRIVATE_REFRESHED_DOSSIER_JSON>
+
+Midlane independently claims, decides, and exports the fresh challenge. Hunter
+then binds the still-claimed rework to that admitted result and exact current
+package tree:
+
+python -B tools/review_mailbox/review_mailbox.py rebind-final-rework-candidate --item <ITEM_ID> --candidate-challenge <PRIVATE_REFRESHED_RESULT_JSON> --expected-package-hash <CURRENT_PACKAGE_SHA256>
+
+Both transitions require the original candidate key, product, version, target,
+root family, package number, claimed request, review scope, prior admitted
+candidate, and exact item/request lineage. Decision and export revalidate the
+fresh receipt and current GOAL bytes against that recorded target even when a
+different target is globally ACTIVE; ordinary candidates still require the
+one global ACTIVE target. A package number without the refresh lineage never
+grants parked-target authority. Rebinding does not change
+package bytes, revision, recorded package hash, or request state. Full preflight
+and normal re-registration remain mandatory afterward.
+
+Existing numbered lineages created before this policy are grandfathered. Their
+normal rework and preflight gates remain mandatory, but they do not invent a
+retroactive challenge. New numbers cannot use this legacy path.
+
+Economics and measurement
+
+Do not loosen the threshold during the first 20 decisions. Track dispositions,
+admission rate, package conversion, Final rework, READY, offers, accepted
+dollars, research time per offer when available, and same-product
+concentration. Evidence quality and exact impact outrank the estimate.
+Never use an operator exception to admit failed or incomplete technical proof
+or hard eligibility.

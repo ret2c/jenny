@@ -1,0 +1,43 @@
+{
+  "description": "JENNY Hunter activity visibility and direct Git history enforcement; no research or state transitions.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "commandWindows": "python -B tools\\review_mailbox\\hunter_activity_hook.py",
+            "command": "python -B tools/review_mailbox/hunter_activity_hook.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "commandWindows": "python -B tools\\review_mailbox\\hunter_activity_hook.py",
+            "command": "python -B tools/review_mailbox/hunter_activity_hook.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "commandWindows": "python -B tools\\review_mailbox\\hunter_activity_hook.py",
+            "command": "python -B tools/review_mailbox/hunter_activity_hook.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

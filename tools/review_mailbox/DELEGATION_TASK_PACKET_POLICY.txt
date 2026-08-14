@@ -1,0 +1,26 @@
+JENNY BOUNDED DELEGATION POLICY
+
+Delegation is optional and requires current operator authorization. A role that
+delegates must not use the collaboration tool's default full-history fork.
+Use fork_turns="none" unless a small explicit positive turn count is necessary.
+
+Every delegated review receives a self-contained task packet with:
+
+1. one bounded objective;
+2. exact input paths;
+3. exact allowed output path or a response-only result;
+4. required checks and evidence standard;
+5. prohibited mutations and secret-handling limits;
+6. stop conditions;
+7. the expected result schema; and
+8. the parent role that owns reconciliation.
+
+The child does not inherit authority to mutate a package, activate a target,
+submit a case, or broaden scope. It returns one result to the parent. The parent
+independently reconciles that result against current bytes and state.
+
+Completed child rollouts are private operational records. Never broadly scan,
+delete, or truncate them. If retention is necessary, archive one exact,
+operator-identified completed rollout with session_rollout_archive.py. Source
+truncation requires both --confirm-completed and the expected full SHA-256, and
+occurs only after a streaming gzip round-trip verifies the same length and hash.

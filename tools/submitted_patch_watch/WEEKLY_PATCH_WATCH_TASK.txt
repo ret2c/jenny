@@ -1,0 +1,80 @@
+WEEKLY SUBMITTED PATCH WATCH
+
+This is one bounded task inside the existing Midlane loop. It is not another
+loop, daemon, scheduler, package review, or hunting lane.
+
+Run `python -B tools/submitted_patch_watch/patch_watch.py --workspace . due`.
+Eligibility is Monday at 6:45 AM system-local time. If Midlane was unavailable,
+the first later loop catches up. For `due=false`, stop this task immediately.
+
+For `due=true`, use the returned `monday_date`:
+
+1. Run `python -B tools/submitted_patch_watch/patch_watch.py --workspace . start --monday-date <YYYY-MM-DD>`. The direct directories under `ZDI/_SUBMITTED`
+   are the complete authoritative inventory. Missing SQLite mailbox rows are
+   expected legacy coverage, not workflow defects.
+2. Run `python -B tools/submitted_patch_watch/patch_watch.py --workspace . batch --monday-date <YYYY-MM-DD> --max-groups 4 --max-entries 20`.
+3. If entries are returned, research only those entries. Reuse one authoritative
+   product release/advisory search across siblings where appropriate. Issue,
+   pull-request, commit, and public-web checks remain root-specific for every
+   entry. Start with official vendor advisories, release notes, changelogs,
+   fixed-version notices, and official repositories; use NVD, CISA, or ZDI only
+   as supporting chronology. Review the safe package description and
+   duplicate/currentness text to extract two to twelve exact root tokens such
+   as a route, function, component, operation, or boundary. Do not read raw
+   credential, token, key, password, or secret evidence.
+4. For every entry, record a source-coverage matrix containing exactly these
+   six source classes: `RELEASES`, `ADVISORIES`, `ISSUES`, `PULL_REQUESTS`,
+   `COMMITS`, and `PUBLIC_WEB`.
+   - A public repository requires all six to be `CHECKED`.
+   - A closed-source product requires releases, advisories, and public web to
+     be `CHECKED`; repository-only classes may be `NOT_APPLICABLE`.
+   - Every `CHECKED` query includes at least one exact root token and records
+     the authoritative public URL actually checked.
+   - A generic release page, repository home page, or product-name-only search
+     cannot support `NO_PUBLIC_CHANGE`.
+   - If required public coverage cannot be completed, use
+     `SOURCE_UNAVAILABLE`; do not infer a clean result.
+5. Classify every returned entry exactly once:
+   - `NO_PUBLIC_CHANGE`: no matching public remediation found.
+   - `POSSIBLE_FIX`: a plausible match needs a later comparison.
+   - `LIKELY_EXACT_FIX`: root/sink/remediation strongly match, chronology is not
+     yet conclusively before or after submission.
+   - `FIX_RELEASED_AFTER_SUBMISSION`: strong match publicly released after the
+     recorded submission.
+   - `PUBLIC_AFTER_SUBMISSION`: the submitted root became public after the
+     recorded submission, whether or not a fix was released.
+   - `PUBLIC_BEFORE_SUBMISSION`: strong match was public before submission.
+   - `SOURCE_UNAVAILABLE`: authoritative public material could not be checked.
+   - `RECORD_INCOMPLETE`: the submitted root cannot be identified sufficiently.
+   A version bump alone is `NO_PUBLIC_CHANGE`, not `POSSIBLE_FIX`. Mention the
+   new version and release date in the summary, and state the elapsed time from
+   the recorded submission when available. If the submission timestamp is
+   unavailable, say so rather than inferring it from a package filename.
+6. Write one private scratch JSON object with schema
+   `jenny.weekly-patch-watch-results.v2`, the exact `monday_date`, and a
+   non-empty `results` array. Each result contains only:
+   `entry_id`, `status`, `summary`, `confidence` (`LOW`, `MEDIUM`, or `HIGH`),
+   timezone-aware ISO `checked_at`, bounded public `source_urls`, and
+   `chronology` with `submission_at`, `public_change_at`, and `relationship`
+   (`NO_MATCH`, `UNKNOWN`, `PREDATES_SUBMISSION`, `POSTDATES_SUBMISSION`, or
+   `SAME_DAY`), plus `research_coverage` with exactly:
+   - `repository_kind`: `PUBLIC` or `CLOSED`;
+   - `root_tokens`: two to twelve exact root tokens; and
+   - `checks`: six objects containing only `source_class`, `status`
+     (`CHECKED`, `NOT_APPLICABLE`, or `UNAVAILABLE`), `query`, and `urls`.
+7. Run `python -B tools/submitted_patch_watch/patch_watch.py --workspace . record --monday-date <YYYY-MM-DD> --input <SCRATCH_JSON>`.
+
+Process one bounded batch per Midlane iteration. On a later iteration, continue
+the same run from its durable cursor. If `batch` returns no entries, run
+`python -B tools/submitted_patch_watch/patch_watch.py --workspace . finalize --monday-date <YYYY-MM-DD>` once.
+
+`LIKELY_EXACT_FIX`, `FIX_RELEASED_AFTER_SUBMISSION`,
+`PUBLIC_AFTER_SUBMISSION`, and `PUBLIC_BEFORE_SUBMISSION` are durable. Future
+weekly manifests carry only schema-valid, fully researched results forward and
+do not return them for research again. Possible matches, unchanged cases,
+source/record gaps, shallow legacy results, and new submissions remain
+eligible.
+
+Never modify submitted or frozen package bytes. Never infer ZDI acceptance,
+rejection, payment, or case state. Do not include credentials, tokens, secrets,
+raw evidence values, or local paths in results or user-visible output.

@@ -1,0 +1,53 @@
+HUNT PROFILE POLICY
+
+The acknowledged profile narrows the active GOAL.md; it never expands target,
+lab, replay, package, submission, or lifecycle authority. CVSS means the score
+supported by demonstrated impact, not a theoretical ceiling. Economic value is
+a separate conservative judgment.
+
+A_TIER_ONLY
+- Intensive work requires demonstrated CVSS 8.0 or higher and credible likely
+  value of at least $10,000, or an exceptional direct enterprise boundary such
+  as pre-authentication RCE, sandbox escape, or equivalent control-plane
+  compromise.
+- A chain component is eligible only when tied to one named outcome credibly
+  worth at least $10,000.
+- Record lower-value leads briefly and BANK them.
+
+BALANCED
+- Intensive work requires demonstrated CVSS 7.0 or higher and credible likely
+  value of at least $5,000.
+- Meaningful components of a named A-tier chain are eligible.
+- Record smaller B-tier leads and BANK them. Packaging a B-tier candidate still
+  requires a named, candidate-bound operator exception.
+
+INCLUDE_B_TIER
+- Intensive work requires demonstrated CVSS 6.0 or higher, meaningful
+  enterprise impact, and credible paid value.
+- Full proof work is allowed. Once acknowledged for the matching active target,
+  INCLUDE_B_TIER is standing operator authority for TIER_B_EXCEPTION. Candidate
+  Challenge still independently verifies technical proof and hard eligibility;
+  the standing authority may override only a PARTIAL economic review. Do not request a second candidate-specific
+  approval. A named candidate-bound exception remains available when another
+  profile is active.
+
+CHECKPOINT RULES
+- A selection applies at Hunter's next semantic checkpoint after the current
+  guarded replay, package or Final rework transaction, and already-submitted
+  Candidate Challenge reach a safe boundary.
+- A loosening change is safe once the current guarded command returns. Apply it
+  before starting the next guarded command; it must not remain pending across
+  two semantic check-ins.
+- A profile change never rewrites GOAL.md or requires a goal reread by itself.
+- Finish in-flight work under its recorded prior revision. Preserve evidence
+  before selecting the next tranche.
+- Record the exact acknowledged revision and preset in HUNTER_STATE.md.
+- Tightening preserves lower-value leads. Loosening does not automatically
+  revive, challenge, number, package, or schedule BANKED or terminal work.
+- If no lane is eligible, record NO_ELIGIBLE_TRANCHE and request operator
+  direction. Do not silently lower the profile or park the target.
+- When CVSS is not demonstrated yet, select lanes using Expected class and the
+  conservative likely-value band. Candidate Challenge applies the demonstrated
+  threshold before intensive proof or packaging continues.
+- If policy storage is unavailable, keep the last acknowledged profile and
+  reject new policy writes. Failure never makes the policy more permissive.

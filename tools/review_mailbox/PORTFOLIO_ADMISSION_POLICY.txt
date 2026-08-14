@@ -1,0 +1,121 @@
+JENNY PORTFOLIO ADMISSION POLICY
+
+Purpose
+
+Technical validity is not portal worthiness. Hunt broadly, preserve meaningful
+Tier-B work, and spend package/reviewer/operator attention only on candidates
+that deserve promotion now.
+
+Private candidate dispositions
+
+- PROMOTE: build and register an external package now.
+- BANK: preserve complete private evidence, reproduction, currentness, and next
+  action, but do not assign a package number or build an external package.
+- CONSOLIDATE: retain the candidate as a sibling or chain component and identify
+  the lead root/impact it strengthens.
+- WRITE_OFF: public, duplicate, fixed, stale, unsupported, or economically
+  unsellable. Preserve the decision privately.
+
+Promotion standard
+
+PROMOTE requires all of the following:
+
+1. Exact-current supported product identity, credible widespread deployment,
+   and a technically admissible candidate. The latest shipped stable version
+   must contain the issue.
+2. Conservative likely payout and separate theoretical ceiling, calibrated
+   against actual accepted offers and adverse buyer evidence.
+3. A current same-product inventory and an independently fixable root that is
+   materially distinct from submitted, accepted, held, dead, ready, and active
+   siblings.
+4. One of:
+   - A_TIER: credible likely value around USD 10,000 or more, or a direct
+     unauthenticated/low-position crossing of a major enterprise boundary.
+   - CHAIN_COMPONENT: required to demonstrate one credible combined A-tier
+     impact, with the exact chain and missing proof recorded.
+   - TIER_B_EXCEPTION: unusually clean, distinct work with credible likely value
+     around USD 5,000 or more, promoted only by explicit operator exception.
+5. A concrete explanation of why this candidate should consume attention now.
+6. The candidate is the strongest presently supported same-root outcome, or
+   every credible stronger same-root path has a recorded evidence-backed
+   typed technical closure. Absence of proof, untested geometry, harness
+   friction, elapsed time, or failure to find a stable object is not closure.
+   An open upgrade path remains research work and cannot be promoted.
+
+Standing ZDI buyer-fit baseline
+
+The canonical full rule is ACQUISITION_BASELINE.txt in this directory.
+
+- Prefer remote code execution, enterprise/server software, desktop or mobile
+  operating systems, browsers, SCADA/IIoT, sandbox or VM escapes, and security
+  products.
+- Do not promote XSS, DLL planting, live-site-only issues, ActiveX, ordinary
+  consumer-only products, beta or pre-release software, DoS-only findings, or
+  anything already public or otherwise known.
+- A widely used security product or some IoT products may survive the consumer
+  filter only when the dossier proves the narrow exception and deployment.
+- These are acquisition gates in addition to technical validity. Tier-B
+  authority cannot waive latest-version, deployment, public-status, or
+  excluded-class failures.
+
+Tier-B work remains valid research. It defaults to BANK, not suppression.
+Post-authentication disclosure, ordinary authorization issues, CVSS below 7,
+limited integrity impact, and DoS-only work do not PROMOTE unless a demonstrated
+stronger chain or explicit operator exception changes the economics.
+An acknowledged INCLUDE_B_TIER profile is standing operator authority to
+promote a matching-target Tier-B candidate without another approval request.
+Under another profile, the operator may explicitly direct Hunter to package a
+named Tier-B candidate through a candidate-bound exception. Record the current
+authority privately as TIER_B_EXCEPTION with operator_exception true and
+PROMOTE. Either path changes portfolio disposition and economic review only.
+Technical proof and hard eligibility remain PASS; neither path waives
+supported
+reachability, currentness, public or duplicate status, evidence quality, or
+package-integrity gates.
+
+A-tier standing authority
+
+A distinct A_TIER candidate has standing authority to enter Candidate
+Challenge regardless of how many same-product candidates or packages already
+exist. There is no numeric promotion budget, fourth-case approval, saturation
+exception, or other count-based operator decision. When independent review
+confirms technical proof, hard eligibility, and economic review all PASS, the required disposition is
+ADMIT_PROOF, followed by package construction. The operator is not asked to
+re-authorize that normal path.
+
+This is not a waiver. Exact public or local duplication, common remediation,
+unsupported reachability, failed proof, overstated economics, or another
+admission failure still requires CONSOLIDATE, WRITE_OFF, or corrected
+classification.
+The no-cap rule prevents package count from substituting for those evidence
+decisions.
+
+Product pressure
+
+- Rank every candidate against the complete same-product portfolio.
+- Lead with the strongest one to three candidates.
+- Same-product count and concentration must be recorded, but never require
+  separate operator approval for a distinct A_TIER candidate.
+- More than five related cases, or a dense common-remediation family, should be
+  flagged for operator awareness and exact duplicate/remediation analysis. It
+  does not by itself block A-tier Candidate Challenge or packaging.
+- Independently fixable roots may remain separate, but stagger the strongest
+  first. One narrow fix that closes multiple candidates is consolidation
+  pressure, not a reason to multiply reports.
+
+Stage responsibilities
+
+- Scoper defines the target-specific A-tier objective, likely bands,
+  saturation evidence, and banking/chain rules. It must not create a numeric
+  A-tier promotion budget or same-product approval cap.
+- Hunter creates a private hash-bound portfolio-admission record before
+  begin-package-build. Only PROMOTE proceeds to external packaging.
+- Midlane remains a technical and mechanical reviewer. It may identify sibling
+  overlap but does not decide portfolio economics.
+- Final Reviewer independently decides both technical readiness and whether the
+  package should be submitted now. READY means both are satisfied.
+- The operator alone submits, overrides a disposition, or authorizes a Tier-B
+  exception.
+
+The portfolio record and all economics are private. They never enter external
+package bytes or ZDI/signoff.txt.

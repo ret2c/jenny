@@ -1,0 +1,101 @@
+# Private research and package state
+/targets/*
+!/targets/.gitkeep
+/ZDI/*
+!/ZDI/.gitkeep
+/ZDI_STAGING/*
+!/ZDI_STAGING/.gitkeep
+/notes/*
+!/notes/.gitkeep
+/scratch/*
+!/scratch/.gitkeep
+
+# Live workflow state
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+
+# Credentials, licenses, and common private artifacts
+*.lic
+*.key
+*.pem
+*.p12
+*.pfx
+*.license
+*.kdbx
+*.gpg
+*.ovpn
+.env
+.env.*
+!.env.example
+api_keys.txt
+provider_requests.jsonl
+zdi_*
+!/ZDI_STAGING/
+!/ZDI_STAGING/.gitkeep
+
+# Generated Python state
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Virtual environments and package output
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
+node_modules/
+
+# Binaries, archives, appliances, and lab disks
+*.7z
+*.rar
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.exe
+*.dll
+*.sys
+*.obj
+*.pdb
+*.lib
+*.exp
+*.iso
+*.ova
+*.ovf
+*.vhd
+*.vhdx
+*.vmdk
+*.qcow2
+*.img
+*.bin
+*.dmp
+*.core
+
+# Runtime noise
+*.sqlite
+*.db
+*.db-*
+*.lock
+*.log
+*.pid
+state.json
+/tmp/
+/artifacts/
+/corpus/
+/.triage-state/
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Private generated hunt-state databases
+/notes/hunt_state/*.sqlite3*
