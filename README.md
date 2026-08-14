@@ -7,7 +7,7 @@ A: It didn't fit the vibe tbh, was trying to find a pilot photo but this popped 
    the current image kinda fit the vibe dont it
    do u guys agree?
 -->
-<img width="250" height="250" alt="jenny-logo" src="https://github.com/user-attachments/assets/8ab009de-5dfa-4743-be70-46126d61d337" />
+<img width="250" height="250" alt="jenny-logo" src="docs/assets/jenny-11.jpg" />
 
 JENNY is my vulnerability-research workflow, composed of a Target Scoper, Hunter, bounded Midlane Reviewer, and independent Final Reviewer, all operating without API-key orchestration. It stems from Inverted Jenny, a [misprinted 24¢ US postage stamp pane](https://en.wikipedia.org/wiki/Inverted_Jenny) issued on May 10, 1918, whose defect transformed its error into one of the most valuable rarities in American philately. JENNY follows the same premise: defects can carry extraordinary value when discovered in the right place. Its purpose is to systematically uncover impactful, commercially meaningful vulnerabilities in software products with widespread enterprise deployment for submission to [TrendMicro's Zero Day Initiative](https://www.zerodayinitiative.com/).
 </div>

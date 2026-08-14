@@ -84,7 +84,7 @@ The normal layout is three persistent agent sessions plus one optional session.
 Each role needs its own conversation context. These can be Windows Terminal
 tabs, separate terminal windows, or agents called from the AI's desktop app, if supported.
 
-<img width="1897" height="77" alt="SS-of-Windows-Terminal-tabs" src="https://github.com/user-attachments/assets/4cfec564-313e-488b-bb51-532aefa48e0e" />
+<img alt="SS-of-Windows-Terminal-tabs" src="assets/terminaltabs.png" />
 
 
 | Session | Keep open? | Purpose |
