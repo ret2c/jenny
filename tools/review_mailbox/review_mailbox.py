@@ -2185,6 +2185,29 @@ class Mailbox:
         timestamp = utc_now()
         with self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
+            if worker == "midlane" and state == "IDLE":
+                candidate_table = connection.execute(
+                    "SELECT 1 FROM sqlite_master "
+                    "WHERE type = 'table' AND name = 'candidate_challenges'"
+                ).fetchone()
+                if candidate_table is not None:
+                    ready_candidate = connection.execute(
+                        """
+                        SELECT id
+                        FROM candidate_challenges
+                        WHERE state = 'PENDING'
+                           OR (state = 'CLAIMED' AND reviewer = 'midlane')
+                        ORDER BY updated_at, id
+                        LIMIT 1
+                        """
+                    ).fetchone()
+                    if ready_candidate is not None:
+                        raise MailboxError(
+                            "Midlane cannot check in IDLE: Candidate Challenge "
+                            f"{int(ready_candidate['id'])} is ready; run "
+                            "candidate_challenge.py claim-next --reviewer midlane "
+                            "before waiting"
+                        )
             existing = connection.execute(
                 """
                 SELECT state, task, detail, updated_at

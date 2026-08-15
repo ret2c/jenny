@@ -139,14 +139,28 @@ def _session_context(
 
 def _goal_from_prompt(prompt: str, workspace: Path) -> tuple[str, Path] | None:
     normalized = prompt.strip()
-    folded = normalized.casefold()
-    if not re.match(r"^(?:/goal\s+)?read\b", folded):
-        return None
-    if "until i tell you to stop" not in folded:
-        return None
     matches = list(GOAL_PATTERN.finditer(normalized))
     slugs = {match.group("slug").casefold() for match in matches}
     if len(slugs) != 1:
+        return None
+    authorized = False
+    for clause in re.split(
+        r"(?:[.!?;]+\s+|\s*,?\s+(?:but|however)\s+)",
+        normalized,
+        flags=re.IGNORECASE,
+    ):
+        if GOAL_PATTERN.search(clause) is None:
+            continue
+        folded_clause = clause.casefold()
+        if not re.search(
+            r"\b(?:read|activate|execute|start|run|hunt|work)\b",
+            folded_clause,
+        ):
+            continue
+        if re.search(r"\b(?:do\s+not|don't|dont|never|not)\b", folded_clause):
+            return None
+        authorized = True
+    if not authorized:
         return None
     slug = next(iter(slugs))
     goal = (workspace / "targets" / slug / "GOAL.md").resolve()

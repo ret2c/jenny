@@ -21,6 +21,7 @@ from tools.workflow_dashboard.snapshot import (  # noqa: E402
     HostHealthSampler,
     read_target_lifecycle_snapshot,
     read_workflow_snapshot,
+    resolve_diminishing_returns_path,
 )
 
 
@@ -90,6 +91,9 @@ class DashboardServer(ThreadingHTTPServer):
     allow_reuse_address = True
 
 
+TAILSCALE_IPV4_NETWORK = ipaddress.ip_network("100.64.0.0/10")
+
+
 def validate_bind(value: str) -> str:
     try:
         address = ipaddress.ip_address(value)
@@ -109,9 +113,17 @@ def validate_port(value: int) -> int:
 
 def validate_remote_access(bind: str, allow_remote: bool) -> str:
     address = validate_bind(bind)
-    if not ipaddress.ip_address(address).is_loopback and not allow_remote:
+    parsed = ipaddress.ip_address(address)
+    if parsed.is_loopback:
+        return address
+    if not allow_remote:
         raise ValueError(
             "non-loopback dashboard binding requires explicit --allow-remote"
+        )
+    if parsed not in TAILSCALE_IPV4_NETWORK:
+        raise ValueError(
+            "remote dashboard binding requires one concrete Tailscale IPv4 "
+            "address in 100.64.0.0/10"
         )
     return address
 
@@ -133,6 +145,11 @@ def acknowledge_diminishing_returns(
 
     from tools.target_lifecycle import target_lifecycle
 
+    target_lifecycle.validate_diminishing_returns_marker(
+        workspace,
+        slug,
+        resolve_diminishing_returns_path(workspace, slug),
+    )
     database = workspace / "notes" / "target_lifecycle" / "target_lifecycle.sqlite3"
     event = target_lifecycle.add_event(
         database,
@@ -1016,8 +1033,8 @@ def _parser() -> argparse.ArgumentParser:
         "--allow-remote",
         action="store_true",
         help=(
-            "allow a non-loopback bind; use only behind a trusted local or "
-            "Tailscale access boundary"
+            "allow a concrete Tailscale IPv4 bind in 100.64.0.0/10; wildcard "
+            "and LAN binds are rejected"
         ),
     )
     parser.add_argument("--no-open", action="store_true")
@@ -1171,8 +1188,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"JENNY dashboard: {url}", flush=True)
     if not ipaddress.ip_address(bind).is_loopback:
         print(
-            "Remote mode: no application authentication; trusted network "
-            "and Tailscale ACLs are the access boundary.",
+            "Remote mode: concrete Tailscale bind; Tailscale ACLs are the "
+            "access boundary.",
             flush=True,
         )
     print("Press Ctrl+C to stop.", flush=True)

@@ -20,16 +20,16 @@ Use `--no-open` when the browser should not open automatically. Use `--port 0` f
 Remote access is explicit. To make the dashboard reachable through this
 machine's Tailscale IPv4 address, start it with:
 
-`python -B tools/workflow_dashboard/dashboard.py --bind 0.0.0.0 --allow-remote`
+`python -B tools/workflow_dashboard/dashboard.py --bind <tailscale-ip> --allow-remote`
 
 Then open:
 
 `http://<tailscale-ip>:8765/`
 
-An exact IPv4 address can still be selected with `--bind`, but every
-non-loopback bind requires `--allow-remote`. Hostnames and IPv6 binds are
-rejected. The dashboard has no application authentication; Windows Firewall,
-local-network exposure, and Tailscale access controls remain the boundary.
+Remote mode accepts one exact address in Tailscale's `100.64.0.0/10` IPv4
+range, and every non-loopback bind requires `--allow-remote`. Wildcard, LAN,
+public, hostname, and IPv6 binds are rejected. The dashboard has no application
+authentication; Tailscale access controls remain the boundary.
 
 ## What it reads
 

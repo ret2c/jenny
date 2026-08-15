@@ -194,6 +194,99 @@ def _resolve_recorded_path(value: str | None) -> Path | None:
     return path.resolve() if path.is_absolute() else (WORKSPACE / path).resolve()
 
 
+def _validate_declared_evidence_appendix(
+    goal_path: Path,
+    required_appendix: Path,
+) -> list[str]:
+    """Require the GOAL pointer to resolve to the validated appendix bytes."""
+    if not goal_path.is_file():
+        return [f"goal file does not exist: {goal_path}"]
+    text = goal_path.read_text(encoding="utf-8", errors="replace")
+    match = re.search(
+        r"^Evidence appendix:\s+`([^`]*EVIDENCE_APPENDIX\.md)`\s*$",
+        text,
+        re.MULTILINE,
+    )
+    if match is None:
+        if "Goal schema: 2" not in text:
+            return []
+        return ["goal has no declared evidence appendix pointer"]
+    raw_path = Path(match.group(1))
+    if raw_path.is_absolute():
+        declared = raw_path.resolve()
+    elif raw_path.parent == Path("."):
+        declared = (goal_path.parent / raw_path).resolve()
+    else:
+        declared = (WORKSPACE / raw_path).resolve()
+    if not declared.is_file():
+        return [f"declared evidence appendix does not exist: {declared}"]
+    if not required_appendix.is_file():
+        return [f"required evidence appendix does not exist: {required_appendix}"]
+    if declared.read_bytes() != required_appendix.read_bytes():
+        return ["declared evidence appendix differs from validated scope appendix"]
+    return []
+
+
+def _publish_new_target_scope_pair(
+    goal_path: Path,
+    appendix_path: Path,
+    mirror_path: Path,
+    *,
+    fetch_text: Any = None,
+) -> Path:
+    target_appendix = mirror_path.parent / "EVIDENCE_APPENDIX.md"
+    if mirror_path.exists():
+        raise ValueError("publish-mirror requires an absent destination mirror")
+    if target_appendix.exists():
+        raise ValueError(
+            "publish-mirror requires an absent target-local evidence appendix"
+        )
+    mirror_path.parent.mkdir(parents=True, exist_ok=True)
+    staged_goal = mirror_path.with_name(mirror_path.name + f".{os.getpid()}.tmp")
+    staged_appendix = target_appendix.with_name(
+        target_appendix.name + f".{os.getpid()}.tmp"
+    )
+    for staged in (staged_goal, staged_appendix):
+        if staged.exists():
+            raise ValueError(f"scope publication staging path already exists: {staged}")
+    published_goal = False
+    published_appendix = False
+    try:
+        staged_goal.write_bytes(goal_path.read_bytes())
+        staged_appendix.write_bytes(appendix_path.read_bytes())
+        os.replace(staged_appendix, target_appendix)
+        published_appendix = True
+        os.replace(staged_goal, mirror_path)
+        published_goal = True
+        if mirror_path.read_bytes() != goal_path.read_bytes():
+            raise RuntimeError("published goal mirror bytes differ from validated source")
+        if target_appendix.read_bytes() != appendix_path.read_bytes():
+            raise RuntimeError(
+                "published evidence appendix bytes differ from validated source"
+            )
+        mirror_errors = _validate_goal_source(
+            mirror_path,
+            resolve_currentness=True,
+            fetch_text=fetch_text,
+            required_schema_version=2,
+        )
+        if mirror_errors:
+            raise ValueError(
+                "published Hunter mirror validation failed: "
+                + "; ".join(mirror_errors)
+            )
+        return target_appendix
+    except BaseException:
+        if published_goal:
+            mirror_path.unlink(missing_ok=True)
+        if published_appendix:
+            target_appendix.unlink(missing_ok=True)
+        raise
+    finally:
+        staged_goal.unlink(missing_ok=True)
+        staged_appendix.unlink(missing_ok=True)
+
+
 def _normalize_instruction_path(value: str) -> str:
     return value.replace("\\", "/").casefold()
 
@@ -208,10 +301,12 @@ def _load_python_module(name: str, path: Path) -> Any:
 
 
 def _target_scoper_script(name: str) -> Path:
-    candidate = WORKSPACE / "skills" / "target-scoper" / "scripts" / name
-    if candidate.is_file():
-        return candidate
-    raise FileNotFoundError(f"target-scoper script not found: {candidate}")
+    candidates = (WORKSPACE / "skills" / "target-scoper" / "scripts" / name,)
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    rendered = ", ".join(str(candidate) for candidate in candidates)
+    raise FileNotFoundError(f"target-scoper script not found; checked: {rendered}")
 
 
 def _is_compact_goal(path: Path) -> bool:
@@ -333,7 +428,13 @@ def _instruction_affirmatively_names_target(
     affirmative = False
     for clause in _instruction_clauses(instruction):
         normalized_clause = " ".join(clause.casefold().replace("-", " ").split())
-        if not any(identifier in normalized_clause for identifier in normalized_identifiers):
+        if not any(
+            re.search(
+                rf"(?<![a-z0-9]){re.escape(identifier)}(?![a-z0-9])",
+                normalized_clause,
+            )
+            for identifier in normalized_identifiers
+        ):
             continue
         if not any(re.search(pattern, normalized_clause) for pattern in actions):
             continue
@@ -360,7 +461,6 @@ def _validate_activation_goal(
     )
     if errors:
         raise ValueError("target activation goal validation failed: " + "; ".join(errors))
-    normalized_instruction = _normalize_instruction_path(operator_instruction)
     accepted_paths = {
         _normalize_instruction_path(str(mirror)),
         _normalize_instruction_path(str(original)),
@@ -378,23 +478,31 @@ def _validate_activation_goal(
         accepted_paths.add(_normalize_instruction_path(recorded_mirror))
     if recorded_original:
         accepted_paths.add(_normalize_instruction_path(recorded_original))
-    if not any(path and path in normalized_instruction for path in accepted_paths):
-        raise ValueError(
-            "operator instruction must name the exact goal path being activated"
-        )
-    if not _instruction_affirmatively_names_path(
+    actions = (
+        r"\bactivate\b",
+        r"\bexecute\b",
+        r"\bstart\b",
+        r"\brun\b",
+        r"\bswitch\b.*\b(?:target|goal|hunt)\b",
+        r"\b(?:hunt|work)\b.*\b(?:target|goal)\b",
+    )
+    path_authorized = _instruction_affirmatively_names_path(
         operator_instruction,
-        (
-            r"\bactivate\b",
-            r"\bexecute\b",
-            r"\bstart\b",
-            r"\bswitch\b.*\b(?:target|goal|hunt)\b",
-            r"\b(?:hunt|work)\b.*\b(?:target|goal)\b",
-        ),
+        actions,
         accepted_paths,
-    ):
+    )
+    target_authorized = _instruction_affirmatively_names_target(
+        operator_instruction,
+        actions,
+        {
+            str(target.get("slug") or ""),
+            str(target.get("product") or ""),
+        },
+    )
+    if not path_authorized and not target_authorized:
         raise ValueError(
-            "operator instruction must affirmatively authorize activation or execution of the exact goal"
+            "operator instruction must affirmatively authorize activation or "
+            "execution of the recorded goal or exact target"
         )
     return mirror, sha256_file(mirror)
 
@@ -414,14 +522,36 @@ def verify_checkout(db_path: Path, slug: str) -> list[str]:
     goal = _resolve_recorded_path(target.get("goal_path"))
     mirror = _resolve_recorded_path(target.get("mirror_path"))
     errors: list[str] = []
+    appendix: Path | None = None
     if scope is None:
         errors.append("target has no recorded scope path")
-    elif not (scope / "EVIDENCE_APPENDIX.md").is_file():
-        errors.append("required evidence appendix does not exist")
+    else:
+        appendix = scope / "EVIDENCE_APPENDIX.md"
+        if not appendix.is_file():
+            errors.append("required evidence appendix does not exist")
     if goal is None or mirror is None:
         errors.append("target has no recorded goal and mirror paths")
     else:
         errors.extend(_validate_goal_contract(goal, mirror))
+        if appendix is not None and appendix.is_file():
+            errors.extend(_validate_declared_evidence_appendix(goal, appendix))
+        if mirror.is_file():
+            mirror_text = mirror.read_text(encoding="utf-8", errors="replace")
+            target_appendix = mirror.parent / "EVIDENCE_APPENDIX.md"
+            if "Goal schema: 2" in mirror_text:
+                if not target_appendix.is_file():
+                    errors.append(
+                        "target-local evidence appendix does not exist beside Hunter mirror"
+                    )
+                elif appendix is not None and appendix.is_file():
+                    if target_appendix.read_bytes() != appendix.read_bytes():
+                        errors.append(
+                            "target-local evidence appendix differs from validated scope appendix"
+                        )
+                    errors.extend(
+                        _validate_declared_evidence_appendix(mirror, target_appendix)
+                    )
+                    errors.extend(_validate_goal_source(mirror))
         if mirror.is_file() and target.get("goal_sha256") != sha256_file(mirror):
             errors.append("recorded goal hash does not match mirror")
     return errors
@@ -851,8 +981,15 @@ def complete_scope(
         )
     if goal_errors:
         raise ValueError("scope goal validation failed: " + "; ".join(goal_errors))
+    appendix_pointer_errors = _validate_declared_evidence_appendix(
+        goal_path, appendix_path
+    )
+    if appendix_pointer_errors:
+        raise ValueError(
+            "scope evidence appendix validation failed: "
+            + "; ".join(appendix_pointer_errors)
+        )
 
-    init_db(db_path)
     slug = str(target["slug"])
     now = utc_now()
     score = int(payload["score"]["total"])
@@ -881,55 +1018,60 @@ def complete_scope(
     updates = ", ".join(
         f"{column}=excluded.{column}" for column in columns if column != "slug"
     )
-    with closing(connect(db_path)) as conn:
-        conn.execute("BEGIN IMMEDIATE")
-        try:
-            existing = conn.execute(
-                "SELECT status FROM targets WHERE slug = ?", (slug,)
-            ).fetchone()
-            if existing is not None and existing["status"] == "ACTIVE":
-                raise ValueError("complete-scope cannot overwrite an ACTIVE target")
-            conn.execute(
-                f"INSERT INTO targets ({', '.join(columns)}) VALUES ({placeholders}) "
-                f"ON CONFLICT(slug) DO UPDATE SET {updates}",
-                [record[column] for column in columns],
-            )
-            conn.execute(
-                "INSERT INTO events "
-                "(slug, event_type, detail, metadata_json, created_at) "
-                "VALUES (?, ?, ?, ?, ?)",
-                (
-                    slug,
-                    "SCOPED",
-                    "Validated target scope completed",
-                    json.dumps(
-                        {
-                            "decision_path": str(decision_path),
-                            "goal_sha256": record["goal_sha256"],
-                            "fit_score": score,
-                        },
-                        sort_keys=True,
+    published_target_appendix: Path | None = None
+    if publish_mirror:
+        published_target_appendix = _publish_new_target_scope_pair(
+            goal_path,
+            appendix_path,
+            mirror_path,
+            fetch_text=fetch_text,
+        )
+    try:
+        init_db(db_path)
+        with closing(connect(db_path)) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            try:
+                existing = conn.execute(
+                    "SELECT status FROM targets WHERE slug = ?", (slug,)
+                ).fetchone()
+                if existing is not None and existing["status"] == "ACTIVE":
+                    raise ValueError("complete-scope cannot overwrite an ACTIVE target")
+                conn.execute(
+                    f"INSERT INTO targets ({', '.join(columns)}) VALUES ({placeholders}) "
+                    f"ON CONFLICT(slug) DO UPDATE SET {updates}",
+                    [record[column] for column in columns],
+                )
+                conn.execute(
+                    "INSERT INTO events "
+                    "(slug, event_type, detail, metadata_json, created_at) "
+                    "VALUES (?, ?, ?, ?, ?)",
+                    (
+                        slug,
+                        "SCOPED",
+                        "Validated target scope completed",
+                        json.dumps(
+                            {
+                                "decision_path": str(decision_path),
+                                "goal_sha256": record["goal_sha256"],
+                                "fit_score": score,
+                            },
+                            sort_keys=True,
+                        ),
+                        now,
                     ),
-                    now,
-                ),
-            )
-            conn.commit()
-        except Exception:
-            conn.rollback()
-            raise
+                )
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                raise
+    except BaseException:
+        if publish_mirror:
+            mirror_path.unlink(missing_ok=True)
+            if published_target_appendix is not None:
+                published_target_appendix.unlink(missing_ok=True)
+        raise
     result = get_target(db_path, slug)
     assert result is not None
-    if publish_mirror:
-        mirror_path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = mirror_path.with_name(mirror_path.name + ".tmp")
-        try:
-            temporary.write_bytes(goal_path.read_bytes())
-            os.replace(temporary, mirror_path)
-        except Exception:
-            temporary.unlink(missing_ok=True)
-            raise
-        if mirror_path.read_bytes() != goal_path.read_bytes():
-            raise RuntimeError("published goal mirror bytes differ from validated source")
     return result
 
 
@@ -998,6 +1140,14 @@ def refresh_scoped_scope(
         raise ValueError(
             "SCOPED target refresh goal validation failed: " + "; ".join(goal_errors)
         )
+    appendix_pointer_errors = _validate_declared_evidence_appendix(
+        goal_path, appendix_path
+    )
+    if appendix_pointer_errors:
+        raise ValueError(
+            "SCOPED target refresh evidence appendix validation failed: "
+            + "; ".join(appendix_pointer_errors)
+        )
 
     identifiers = {
         str(target_payload["slug"]),
@@ -1026,11 +1176,18 @@ def refresh_scoped_scope(
     init_db(db_path)
     mirror_path.parent.mkdir(parents=True, exist_ok=True)
     staged_path = mirror_path.with_name(mirror_path.name + f".refresh-{os.getpid()}.tmp")
-    if staged_path.exists():
-        raise ValueError(f"SCOPED target refresh staging path already exists: {staged_path}")
+    target_appendix = mirror_path.parent / "EVIDENCE_APPENDIX.md"
+    staged_appendix = target_appendix.with_name(
+        target_appendix.name + f".refresh-{os.getpid()}.tmp"
+    )
+    if staged_path.exists() or staged_appendix.exists():
+        raise ValueError("SCOPED target refresh staging path already exists")
     staged_path.write_bytes(goal_bytes)
+    staged_appendix.write_bytes(appendix_path.read_bytes())
     replaced_mirror = False
+    replaced_appendix = False
     prior_mirror_bytes: bytes | None = None
+    prior_appendix_bytes: bytes | None = None
     try:
         with closing(connect(db_path)) as conn:
             conn.execute("BEGIN IMMEDIATE")
@@ -1068,11 +1225,28 @@ def refresh_scoped_scope(
                     goal_path.read_bytes() != goal_bytes
                     or sha256_file(appendix_path) != appendix_hash
                     or staged_path.read_bytes() != goal_bytes
+                    or staged_appendix.read_bytes() != appendix_path.read_bytes()
                 ):
                     raise ValueError("SCOPED target refresh bundle bytes changed during validation")
 
+                prior_appendix_bytes = (
+                    target_appendix.read_bytes() if target_appendix.is_file() else None
+                )
+                os.replace(staged_appendix, target_appendix)
+                replaced_appendix = True
                 os.replace(staged_path, mirror_path)
                 replaced_mirror = True
+                mirror_errors = _validate_goal_source(
+                    mirror_path,
+                    resolve_currentness=True,
+                    fetch_text=fetch_text,
+                    required_schema_version=2,
+                )
+                if mirror_errors:
+                    raise ValueError(
+                        "refreshed Hunter mirror validation failed: "
+                        + "; ".join(mirror_errors)
+                    )
                 updated = conn.execute(
                     """
                     UPDATE targets
@@ -1136,12 +1310,27 @@ def refresh_scoped_scope(
                     restore_path.write_bytes(prior_mirror_bytes)
                     os.replace(restore_path, mirror_path)
                     replaced_mirror = False
+                if replaced_appendix:
+                    if prior_appendix_bytes is None:
+                        target_appendix.unlink(missing_ok=True)
+                    else:
+                        restore_appendix = target_appendix.with_name(
+                            target_appendix.name + f".restore-{os.getpid()}.tmp"
+                        )
+                        restore_appendix.write_bytes(prior_appendix_bytes)
+                        os.replace(restore_appendix, target_appendix)
+                    replaced_appendix = False
                 raise
     finally:
         staged_path.unlink(missing_ok=True)
+        staged_appendix.unlink(missing_ok=True)
 
     if mirror_path.read_bytes() != goal_bytes:
         raise RuntimeError("refreshed goal mirror bytes differ from validated source")
+    if target_appendix.read_bytes() != appendix_path.read_bytes():
+        raise RuntimeError(
+            "refreshed evidence appendix bytes differ from validated source"
+        )
     result = get_target(db_path, slug)
     assert result is not None
     return result
@@ -1221,6 +1410,14 @@ def refresh_active_scope(
         raise ValueError(
             "active scope refresh goal validation failed: " + "; ".join(goal_errors)
         )
+    appendix_pointer_errors = _validate_declared_evidence_appendix(
+        goal_path, appendix_path
+    )
+    if appendix_pointer_errors:
+        raise ValueError(
+            "active scope refresh evidence appendix validation failed: "
+            + "; ".join(appendix_pointer_errors)
+        )
 
     accepted_paths = {
         _normalize_instruction_path(str(goal_path)),
@@ -1247,31 +1444,57 @@ def refresh_active_scope(
     reason = "; ".join(str(value) for value in payload.get("decisive_reasons") or [])
 
     init_db(db_path)
-    with closing(connect(db_path)) as conn:
-        conn.execute("BEGIN IMMEDIATE")
-        try:
-            row = conn.execute(
-                "SELECT * FROM targets WHERE slug = ?", (slug,)
-            ).fetchone()
-            if row is None:
-                raise ValueError(f"unknown target slug {slug!r}; scope the target first")
-            target = dict(row)
-            if target["status"] != "ACTIVE":
-                raise ValueError("active scope refresh requires the target to remain ACTIVE")
-            if str(target.get("goal_sha256") or "") != expected_goal_sha256:
-                raise ValueError(
-                    "active scope refresh compare-and-swap failed: recorded prior hash changed"
-                )
-            if target["product"] != target_payload["product"]:
-                raise ValueError("active scope refresh cannot change target product identity")
-            if (
-                sha256_file(goal_path) != current_hash
-                or sha256_file(mirror_path) != current_hash
-                or sha256_file(appendix_path) != appendix_hash
-            ):
-                raise ValueError("active scope refresh bundle bytes changed during validation")
+    target_appendix = mirror_path.parent / "EVIDENCE_APPENDIX.md"
+    staged_appendix = target_appendix.with_name(
+        target_appendix.name + f".refresh-{os.getpid()}.tmp"
+    )
+    if staged_appendix.exists():
+        raise ValueError("active scope refresh appendix staging path already exists")
+    staged_appendix.write_bytes(appendix_path.read_bytes())
+    prior_appendix_bytes = (
+        target_appendix.read_bytes() if target_appendix.is_file() else None
+    )
+    replaced_appendix = False
+    try:
+        with closing(connect(db_path)) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            try:
+                row = conn.execute(
+                    "SELECT * FROM targets WHERE slug = ?", (slug,)
+                ).fetchone()
+                if row is None:
+                    raise ValueError(f"unknown target slug {slug!r}; scope the target first")
+                target = dict(row)
+                if target["status"] != "ACTIVE":
+                    raise ValueError("active scope refresh requires the target to remain ACTIVE")
+                if str(target.get("goal_sha256") or "") != expected_goal_sha256:
+                    raise ValueError(
+                        "active scope refresh compare-and-swap failed: recorded prior hash changed"
+                    )
+                if target["product"] != target_payload["product"]:
+                    raise ValueError("active scope refresh cannot change target product identity")
+                if (
+                    sha256_file(goal_path) != current_hash
+                    or sha256_file(mirror_path) != current_hash
+                    or sha256_file(appendix_path) != appendix_hash
+                    or staged_appendix.read_bytes() != appendix_path.read_bytes()
+                ):
+                    raise ValueError("active scope refresh bundle bytes changed during validation")
 
-            updated = conn.execute(
+                os.replace(staged_appendix, target_appendix)
+                replaced_appendix = True
+                mirror_errors = _validate_goal_source(
+                    mirror_path,
+                    resolve_currentness=True,
+                    fetch_text=fetch_text,
+                    required_schema_version=2,
+                )
+                if mirror_errors:
+                    raise ValueError(
+                        "refreshed Hunter mirror validation failed: "
+                        + "; ".join(mirror_errors)
+                    )
+                updated = conn.execute(
                 """
                 UPDATE targets
                 SET vendor = ?, category = ?, admission_decision = 'SCOPED',
@@ -1296,21 +1519,22 @@ def refresh_active_scope(
                     expected_goal_sha256,
                 ),
             )
-            if updated.rowcount != 1:
-                raise ValueError(
-                    "active scope refresh compare-and-swap failed concurrently"
-                )
-            metadata = {
-                "appendix_path": str(appendix_path),
-                "appendix_sha256": appendix_hash,
-                "decision_path": str(decision_path),
-                "goal_path": str(goal_path),
-                "goal_sha256": current_hash,
-                "operator_instruction": instruction,
-                "prior_goal_sha256": expected_goal_sha256,
-                "scope_revision": int(payload["scope_revision"]),
-            }
-            conn.execute(
+                if updated.rowcount != 1:
+                    raise ValueError(
+                        "active scope refresh compare-and-swap failed concurrently"
+                    )
+                metadata = {
+                    "appendix_path": str(appendix_path),
+                    "appendix_sha256": appendix_hash,
+                    "decision_path": str(decision_path),
+                    "goal_path": str(goal_path),
+                    "goal_sha256": current_hash,
+                    "mirror_appendix_path": str(target_appendix),
+                    "operator_instruction": instruction,
+                    "prior_goal_sha256": expected_goal_sha256,
+                    "scope_revision": int(payload["scope_revision"]),
+                }
+                conn.execute(
                 """
                 INSERT INTO events(slug, event_type, detail, metadata_json, created_at)
                 VALUES (?, 'SCOPE_REFRESHED', ?, ?, ?)
@@ -1322,10 +1546,27 @@ def refresh_active_scope(
                     now,
                 ),
             )
-            conn.commit()
-        except Exception:
-            conn.rollback()
-            raise
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                if replaced_appendix:
+                    if prior_appendix_bytes is None:
+                        target_appendix.unlink(missing_ok=True)
+                    else:
+                        restore_appendix = target_appendix.with_name(
+                            target_appendix.name + f".restore-{os.getpid()}.tmp"
+                        )
+                        restore_appendix.write_bytes(prior_appendix_bytes)
+                        os.replace(restore_appendix, target_appendix)
+                    replaced_appendix = False
+                raise
+    finally:
+        staged_appendix.unlink(missing_ok=True)
+
+    if target_appendix.read_bytes() != appendix_path.read_bytes():
+        raise RuntimeError(
+            "refreshed evidence appendix bytes differ from validated source"
+        )
 
     result = get_target(db_path, slug)
     assert result is not None
@@ -1585,6 +1826,101 @@ def add_event(
             row = conn.execute("SELECT * FROM events WHERE id = ?", (event_id,)).fetchone()
     assert row is not None
     return dict(row)
+
+
+DIMINISHING_PACKAGE_REFERENCE = re.compile(
+    r"(?i)\b(?P<kind>package|item)\s*#?\s*(?P<number>\d+)\b"
+)
+
+
+def validate_diminishing_returns_marker(
+    workspace: Path,
+    slug: str,
+    marker_path: Path,
+) -> dict[str, Any]:
+    workspace = Path(workspace).resolve()
+    marker = Path(marker_path).resolve()
+    expected_root = (workspace / "targets" / slug).resolve()
+    try:
+        marker.relative_to(expected_root)
+    except ValueError as error:
+        raise ValueError(
+            "diminishing-return marker must remain under its target directory"
+        ) from error
+    if not marker.is_file():
+        raise ValueError(f"diminishing-return marker does not exist: {marker}")
+    try:
+        text = marker.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as error:
+        raise ValueError("diminishing-return marker is not readable UTF-8") from error
+
+    references = sorted(
+        {
+            (match.group("kind").casefold(), int(match.group("number")))
+            for match in DIMINISHING_PACKAGE_REFERENCE.finditer(text)
+        }
+    )
+    if not references:
+        return {"slug": slug, "marker": str(marker), "package_references": []}
+
+    mailbox_db = (
+        workspace / "notes" / "review_mailbox" / "review_mailbox.sqlite3"
+    )
+    if not mailbox_db.is_file():
+        raise ValueError(
+            "diminishing-return package references require the review mailbox database"
+        )
+    uri = mailbox_db.resolve().as_uri() + "?mode=ro"
+    with closing(sqlite3.connect(uri, uri=True, timeout=1)) as connection:
+        connection.row_factory = sqlite3.Row
+        connection.execute("PRAGMA query_only = ON")
+        package_numbers = [number for kind, number in references if kind == "package"]
+        item_ids = [number for kind, number in references if kind == "item"]
+        package_bindings: dict[int, str] = {}
+        item_bindings: dict[int, str] = {}
+        if package_numbers:
+            placeholders = ", ".join("?" for _ in package_numbers)
+            for row in connection.execute(
+                f"SELECT package_number, target_slug FROM candidate_challenges "
+                f"WHERE package_number IN ({placeholders})",
+                package_numbers,
+            ):
+                package_bindings[int(row["package_number"])] = str(
+                    row["target_slug"] or ""
+                )
+        if item_ids:
+            placeholders = ", ".join("?" for _ in item_ids)
+            for row in connection.execute(
+                f"""
+                SELECT wi.id AS item_id, cc.target_slug
+                FROM work_items AS wi
+                LEFT JOIN candidate_challenges AS cc
+                  ON cc.id = wi.candidate_challenge_id
+                WHERE wi.id IN ({placeholders})
+                """,
+                item_ids,
+            ):
+                item_bindings[int(row["item_id"])] = str(row["target_slug"] or "")
+
+    for kind, reference in references:
+        bindings = package_bindings if kind == "package" else item_bindings
+        if reference not in bindings or not bindings[reference]:
+            raise ValueError(
+                f"diminishing-return {kind} {reference} is not bound in workflow state"
+            )
+        if bindings[reference] != slug:
+            raise ValueError(
+                f"diminishing-return {kind} {reference} belongs to target "
+                f"{bindings[reference]}, not {slug}"
+            )
+    return {
+        "slug": slug,
+        "marker": str(marker),
+        "package_references": [
+            number for kind, number in references if kind == "package"
+        ],
+        "item_references": [number for kind, number in references if kind == "item"],
+    }
 
 
 def _heading_text(text: str) -> str:
@@ -1913,6 +2249,14 @@ def build_parser() -> argparse.ArgumentParser:
     event.add_argument("--detail", required=True)
     event.add_argument("--metadata-json")
 
+    diminishing = sub.add_parser(
+        "validate-diminishing-returns",
+        help="validate that a target marker contains only target-bound packages",
+    )
+    diminishing.add_argument("--slug", required=True)
+    diminishing.add_argument("--marker", type=Path, required=True)
+    diminishing.add_argument("--workspace", type=Path, default=WORKSPACE)
+
     show = sub.add_parser("show", help="show one target")
     show.add_argument("--slug", required=True)
 
@@ -1989,6 +2333,14 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "event":
             metadata = json.loads(args.metadata_json) if args.metadata_json else None
             _print_json(add_event(args.db, args.slug, args.event_type, args.detail, metadata))
+        elif args.command == "validate-diminishing-returns":
+            _print_json(
+                validate_diminishing_returns_marker(
+                    args.workspace,
+                    args.slug,
+                    args.marker,
+                )
+            )
         elif args.command == "show":
             _print_json(get_target(args.db, args.slug))
         elif args.command == "list":

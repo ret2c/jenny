@@ -129,13 +129,17 @@ Tell the Scoper / Operator assistant:
 Start the workflow status and operator-control dashboard locally and tell me the URL. Do not activate a target.
 ```
 
-For access through an already trusted private network (i.e. if you're on a mesh VPN), say:
+For access through Tailscale, choose the machine's one concrete Tailscale IPv4
+address and say:
 
 ```text
-Start the workflow status and operator-control dashboard for trusted private-network access and tell me the URL. Do not expose it beyond that private boundary.
+Start the workflow status and operator-control dashboard on my concrete Tailscale IPv4 address and tell me the URL. Do not expose it beyond Tailscale.
 ```
 
-The dashboard has no application authentication. It displays status and offers
+Remote mode accepts only one concrete IPv4 address in Tailscale's
+`100.64.0.0/10` range; wildcard, ordinary LAN, and arbitrary public binds are
+rejected. The dashboard has no application authentication, so Tailscale ACLs
+remain the access boundary. It displays status and offers
 explicitly confirmed operator controls for hunt-profile changes, coordination
 decisions, diminishing-return and terminal-outcome acknowledgements, and portal
 submission reconciliation. Those controls invoke the same bounded workflow
@@ -157,10 +161,14 @@ reconciles current local state, and waits without activating anything. When you
 are ready, paste this separate target-selection instruction into Hunter:
 
 ```text
-Read targets/<slug>/GOAL.md completely and execute it until I tell you to stop.
+Activate <target name or slug> and begin the goal.
 ```
 
-That exact instruction is the activation authority. Hunter handles lifecycle
+Natural wording is fine when one non-negated action clause clearly
+identifies the exact target, product, or recorded goal path. You do not need to
+copy a scripted sentence, use an absolute path, match slash style, or append a
+fixed suffix. Negated, reference-only, contradictory, or ambiguous instructions
+still fail closed. Hunter handles lifecycle
 registration, bounded integrity checks, acquisition, lab work, research,
 evidence, package construction, and check-ins.
 

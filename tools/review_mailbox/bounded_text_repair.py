@@ -79,6 +79,11 @@ def _apply_exact_replacements(candidate: Path, payload: dict[str, Any]) -> list[
         relative = Path(replacement["path"])
         target = candidate / relative
         text = target.read_text(encoding="utf-8")
+        if text.count(replacement["old"]) != 1:
+            raise RepairError(
+                "repair old text must occur exactly once at application time: "
+                f"{relative.as_posix()}"
+            )
         target.write_text(
             text.replace(replacement["old"], replacement["new"], 1),
             encoding="utf-8",
@@ -125,6 +130,8 @@ def apply_repair(
     shutil.copytree(original, candidate)
     before = _tree_hashes(original)
     moved_destination: Path | None = None
+    audit_path: Path | None = None
+    audit: dict[str, Any] | None = None
     committed = False
     try:
         changed_paths = _apply_exact_replacements(candidate, payload)
@@ -176,6 +183,18 @@ def apply_repair(
                 or mailbox._hash_package(original) != payload["reviewed_hash"]
             ):
                 raise RepairError("package state changed during bounded repair")
+            new_revision = int(current["revision"]) + 1
+            audit_path = (
+                root
+                / "scratch"
+                / "review_mailbox"
+                / "bounded_repair_audit"
+                / f"item_{item_id}_revision_{new_revision}.json"
+            )
+            if audit_path.exists():
+                raise RepairError(
+                    "bounded repair audit already exists for the next revision"
+                )
             request_id: int | None = None
             if current["state"] == "FINAL_REWORK_QUEUED":
                 row = connection.execute(
@@ -199,7 +218,6 @@ def apply_repair(
             try:
                 candidate.rename(destination)
                 moved_destination = destination
-                new_revision = int(current["revision"]) + 1
                 connection.execute(
                     """
                     UPDATE work_items
@@ -253,6 +271,25 @@ def apply_repair(
                     },
                 )
                 result_item = mailbox._get_item(connection, item_id)
+                audit = {
+                    "schema": SCHEMA,
+                    "status": "PASS",
+                    "item_id": item_id,
+                    "from_hash": payload["reviewed_hash"],
+                    "to_hash": result_item["package_hash"],
+                    "changed_paths": changed_paths,
+                    "unexpected_changes": [],
+                    "input_sha256": _sha256(input_file),
+                    "mechanical_gates": [
+                        {
+                            "id": result["id"],
+                            "status": result["status"],
+                            "exit_code": result.get("exit_code"),
+                        }
+                        for result in mechanical_gates
+                    ],
+                }
+                _atomic_json(audit_path, audit)
             except Exception:
                 if moved_destination is not None and moved_destination.exists():
                     moved_destination.rename(candidate)
@@ -262,33 +299,8 @@ def apply_repair(
                 raise
 
         committed = True
-
-        audit_path = (
-            root
-            / "scratch"
-            / "review_mailbox"
-            / "bounded_repair_audit"
-            / f"item_{item_id}_revision_{result_item['revision']}.json"
-        )
-        audit = {
-            "schema": SCHEMA,
-            "status": "PASS",
-            "item_id": item_id,
-            "from_hash": payload["reviewed_hash"],
-            "to_hash": result_item["package_hash"],
-            "changed_paths": changed_paths,
-            "unexpected_changes": [],
-            "input_sha256": _sha256(input_file),
-            "mechanical_gates": [
-                {
-                    "id": result["id"],
-                    "status": result["status"],
-                    "exit_code": result.get("exit_code"),
-                }
-                for result in mechanical_gates
-            ],
-        }
-        _atomic_json(audit_path, audit)
+        if audit_path is None or audit is None:
+            raise RepairError("bounded repair audit was not prepared")
         return {"item": result_item, "audit_path": str(audit_path), "audit": audit}
     finally:
         if not committed:
@@ -296,6 +308,8 @@ def apply_repair(
                 moved_destination.rename(candidate)
             if backup.exists() and not original.exists():
                 backup.rename(original)
+            if audit_path is not None and audit_path.exists():
+                audit_path.unlink()
         if work_root.exists():
             shutil.rmtree(work_root)
 

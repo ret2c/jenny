@@ -13,6 +13,7 @@ python tools/target_lifecycle/target_lifecycle.py activate --slug example-target
 python tools/target_lifecycle/target_lifecycle.py refresh-active-scope --decision scopes/example-target/SCOPE_DECISION.json --expected-goal-sha256 <PRIOR_GOAL_SHA256> --operator-instruction "Refresh the active goal at targets/example-target/GOAL.md to scope revision 2"
 python tools/target_lifecycle/target_lifecycle.py park --slug example-target --operator-instruction "Park example-target and preserve its rehydration state"
 python tools/target_lifecycle/target_lifecycle.py validate-goal --goal targets/example-target/GOAL.md
+python tools/target_lifecycle/target_lifecycle.py validate-diminishing-returns --slug example-target --marker targets/example-target/DIMINISHING_RETURNS.md --workspace .
 python tools/target_lifecycle/target_lifecycle.py validate-cleanup --manifest targets/example-target/CLEANUP_MANIFEST.json --workspace .
 ```
 
@@ -82,7 +83,9 @@ operator instruction explicitly switches targets and Hunter supplies
 `--switch-active`, which atomically parks the prior target.
 
 Activation authorization is clause-scoped. One non-negated activation or
-execution clause must name the exact recorded goal path. Later independent
+execution clause must identify the exact target, recorded goal path, or an
+unambiguous relative form. Natural operator wording is valid; no scripted
+sentence, absolute path, slash style, or fixed suffix is required. Later independent
 safety clauses such as `Do not promote` or `Never test public systems` remain in
 the recorded instruction and do not negate activation. A negated action clause
 that names the same goal, a contradictory pair of clauses, or an action naming a

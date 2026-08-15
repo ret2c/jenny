@@ -987,6 +987,22 @@ def _diminishing_returns_path(
     return (workspace / "targets" / slug / "DIMINISHING_RETURNS.md").resolve()
 
 
+def resolve_diminishing_returns_path(workspace: Path, slug: str) -> Path:
+    """Resolve one ACTIVE target marker without projecting its path into the UI."""
+    workspace = Path(workspace).resolve()
+    database = workspace / "notes" / "target_lifecycle" / "target_lifecycle.sqlite3"
+    if not database.is_file():
+        raise ValueError("target lifecycle database is unavailable")
+    with closing(_open_read_only(database)) as connection:
+        row = connection.execute(
+            "SELECT goal_path FROM targets WHERE slug = ? AND status = 'ACTIVE'",
+            (slug,),
+        ).fetchone()
+    if row is None:
+        raise ValueError("active target does not match acknowledgement")
+    return _diminishing_returns_path(workspace, slug, row["goal_path"])
+
+
 def _marker_field(text: str, label: str) -> str:
     match = re.search(
         rf"(?im)^\s*(?:[-*]\s*)?(?:\*\*)?{re.escape(label)}"

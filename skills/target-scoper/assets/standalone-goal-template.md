@@ -4,7 +4,7 @@ Goal schema: 2
 Scope revision: {{REVISION}}
 Prepared: {{DATE}}
 Target slug: {{SLUG}}
-Evidence appendix: `targets/{{SLUG}}/EVIDENCE_APPENDIX.md`
+Evidence appendix: `{{SCOPE_DIR}}/EVIDENCE_APPENDIX.md`
 
 ## Authority
 
@@ -196,11 +196,11 @@ authority surface. Current source, shipped binaries, and live proof override it.
 
 ## Diminishing returns and stop
 
-Maintain `targets/{{SLUG}}/DIMINISHING_RETURNS.md` only at target-wide practical
-exhaustion, when every starting hypothesis and every evidence-derived new same-target lane has been dispositioned, coverage across the full supported
-boundary is independently justified, no high-value candidate remains, and
-Hunter recommends parking the entire target. Ordinary negative tranches and
-hypothesis pivots do not create this marker.
+Maintain `targets/{{SLUG}}/DIMINISHING_RETURNS.md` only at target-wide practical exhaustion after every starting and evidence-derived new same-target lane is dispositioned, the supported boundary is independently justified, and no high-value candidate remains. Ordinary negative tranches do not create it.
+Keep it target-bound to this target's packages, evidence, blockers, and lifecycle, using canonical mailbox identity. Before surfacing it, run `python -B
+tools/target_lifecycle/target_lifecycle.py validate-diminishing-returns --slug
+{{SLUG}} --marker targets/{{SLUG}}/DIMINISHING_RETURNS.md --workspace .`; an
+unbound or cross-target package reference blocks the marker.
 
 The marker begins with this exact compact output shape:
 
